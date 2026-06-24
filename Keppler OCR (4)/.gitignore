@@ -1,0 +1,27 @@
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Database (local runtime file)
+database/ai_portal.db
+database/ocr_debug.log
+database/rag_workspace_*/
+
+# Temp files
+temp_uploads/
+streamlit.log
+
+# Environment secrets
+.env
+*.env
+
+# Datasets (large binary files — add to git-lfs if needed)
+datasets/*.joblib
+datasets/*.json

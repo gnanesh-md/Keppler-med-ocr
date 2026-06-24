@@ -1,0 +1,38 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Keppler OCR — Python Dependencies
+# Manage with: python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Core Web Framework ──────────────────────────────────────────────────────
+streamlit>=1.35.0
+
+# ── Authentication & Security ───────────────────────────────────────────────
+bcrypt>=4.0.0
+
+# ── Environment Config ──────────────────────────────────────────────────────
+python-dotenv>=1.0.0
+
+# ── AI / LLM ────────────────────────────────────────────────────────────────
+google-generativeai>=0.7.0       # Google Gemini API (optional, future use)
+litellm>=1.40.0                  # LiteLLM unified LLM interface (rag_chatbot.py)
+openai>=1.0.0                    # Local vLLM Python client (precision_ocr.py, rag_chatbot.py)
+lightrag-hku>=1.0.0              # LightRAG knowledge graph engine (rag_chatbot.py)
+nest-asyncio>=1.6.0              # Async loop patching for Streamlit compatibility
+
+# ── Machine Learning ─────────────────────────────────────────────────────────
+scikit-learn>=1.4.0              # TF-IDF, cosine_similarity (unified_resolver.py, train scripts)
+joblib>=1.3.0                    # Model serialisation/load (unified_resolver.py)
+scipy>=1.12.0                    # Sparse matrices used by scikit-learn (unified_resolver.py)
+numpy>=1.26.0                    # Array ops (precision_ocr.py, unified_resolver.py)
+
+# ── Document Processing ──────────────────────────────────────────────────────
+PyMuPDF>=1.24.0                  # PDF page rendering as images — import fitz (precision_ocr.py)
+PyPDF2>=3.0.0                    # PDF text extraction (rag_chatbot.py)
+Pillow>=10.0.0                   # Image processing (precision_ocr.py, rag_chatbot.py)
+
+# ── Export Formats ───────────────────────────────────────────────────────────
+python-docx>=1.1.0               # DOCX generation (precision_ocr.py)
+xhtml2pdf>=0.2.15                # HTML-to-PDF converter (precision_ocr.py)
+markdown>=3.5.0                  # Markdown-to-HTML for PDF export (precision_ocr.py)
+openpyxl>=3.1.0                  # Excel read/write engine for pandas (precision_ocr.py, scripts)
+pandas>=2.1.0                    # DataFrame operations (precision_ocr.py, admin_panel.py, scripts)
