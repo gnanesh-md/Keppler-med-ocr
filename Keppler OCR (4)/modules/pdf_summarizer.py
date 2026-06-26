@@ -20,6 +20,8 @@ from xhtml2pdf import pisa
 from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+import concurrent.futures
+from streamlit.runtime.scriptrunner import add_script_run_ctx
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
@@ -75,91 +77,11 @@ def extract_page_text(page_img_bytes: bytes, page_num: int) -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 2 — Build structured clinical summary from all extracted text
+# STEP 2 — Enterprise Summarization Pipeline
 # ─────────────────────────────────────────────────────────────────────────────
 
-SUMMARY_PROMPT = """You are a senior clinical documentation specialist.
-Below is the raw OCR text extracted from all pages of a hospital inpatient case file.
+# (Replaced old generate_structured_summary with modules.summarizer package)
 
-Produce a STRUCTURED CLINICAL SUMMARY based on the following sections.
-IMPORTANT INSTRUCTION: If any specific detail, field, or entire section is not found in the text, DO NOT include it in your output. Omit missing fields and sections entirely. Do NOT write "Not documented" or "N/A". Only include sections and fields that have actual data from the text.
-
----
-## 1. PATIENT IDENTIFICATION
-- Full name, age, sex, IP number, UMR number, address
-- Admission date, ward, treating doctor, admission type
-
-## 2. DIAGNOSIS & PROCEDURE
-- Primary diagnosis, final diagnosis
-- Surgery/procedure name, date
-- IOL power / implant details (if ophthalmology)
-- Pre-operative findings (vision, IOP, BP, blood sugar, viral markers)
-- Consent status
-
-## 3. ADMISSION VITALS
-Present as a table: Temperature | Pulse | RR | BP | SpO2 | Height | Weight
-
-## 4. CLINICAL ASSESSMENTS & RISK SCORES
-- Braden Scale score and risk level
-- Morse Fall Risk score and level
-- MEWS score
-- Pain score
-- Patient Acuity category
-- Any other scores documented
-
-## 5. NURSING ASSESSMENT SUMMARY
-- Mobility, vision, hearing, speech status
-- Activities of daily living (bathing, eating, dressing, toilet)
-- Nutritional status
-- Bowel/bladder
-- Skin condition
-- Allergies
-- Psychological/coping status
-
-## 6. NURSING CARE PLAN
-Present as a table: Nursing Diagnosis | Interventions | Rationale | Evaluation
-
-## 7. TREATMENT CHART
-Present as a table: Date | Drug Name | Dose | Route | Frequency | Time
-
-## 8. INVESTIGATIONS
-Present as a table: Test Name | Date Advised | Result (if available)
-
-## 9. NURSING NOTES TIMELINE
-Present as a table: Date | Time | Shift | Entry
-
-## 10. PATIENT MOVEMENT & HANDOVER
-- Transfers between departments
-- ISBAR handover summary (situation, background, assessment, recommendation)
-- Safety checks completed
-
-## 11. PATIENT EDUCATION PROVIDED
-List all education topics covered with nurse name and date
-
-## 12. OVERALL CLINICAL SUMMARY
-Write 5-8 sentences summarising the entire admission: reason for admission,
-clinical course, treatment given, patient response, and discharge status.
----
-
-RAW TEXT FROM ALL PAGES:
-{text}
-
-IMPORTANT: Be factual. Use only what is in the text. Format numbers and dates exactly as written. OMIT ANY FIELDS OR SECTIONS THAT ARE NOT PRESENT IN THE TEXT.
-Start directly with the first available section (e.g., ## 1. PATIENT IDENTIFICATION) — no preamble."""
-
-
-def generate_structured_summary(all_pages_text: str) -> str:
-    prompt = SUMMARY_PROMPT.format(text=all_pages_text[:12000]) # Full context summary
-    try:
-        resp = client.chat.completions.create(
-            model=SUMMARY_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0,
-            max_tokens=3000, 
-        )
-        return resp.choices[0].message.content.strip()
-    except Exception as e:
-        return f"Summary generation failed: {e}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -453,6 +375,7 @@ def render_pdf_summarizer():
         st.divider()
         st.markdown("**⚙️ Settings**")
         show_raw = st.toggle("Show raw OCR text per page", value=False)
+        clear_cache = st.toggle("Force fresh restart (clear cache)", value=False)
         st.caption("Model: qwen2.5vl:32b (OCR) + qwen2.5:7b (Summary)")
         st.divider()
         run_btn = st.button("🚀 Generate Summary", type="primary", width="stretch",
@@ -490,29 +413,66 @@ def render_pdf_summarizer():
     page_texts = {}
     ocr_progress = st.progress(0, text="Starting OCR...")
 
+    images_to_process = {}
     for i in range(total_pages):
-        ocr_progress.progress(
-            (i) / total_pages,
-            text=f"📖 Reading page {i+1} of {total_pages}..."
-        )
         page = doc[i]
-        img_bytes = _page_to_image_bytes(page)
-        text = extract_page_text(img_bytes, i + 1)
-        page_texts[i + 1] = text
-
+        images_to_process[i + 1] = _page_to_image_bytes(page)
     doc.close()
+
+    completed = 0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {}
+        for pg_num, img_bytes in images_to_process.items():
+            future = executor.submit(extract_page_text, img_bytes, pg_num)
+            add_script_run_ctx(future)
+            futures[future] = pg_num
+
+        for future in concurrent.futures.as_completed(futures):
+            pg_num = futures[future]
+            text = future.result()
+            page_texts[pg_num] = text
+            completed += 1
+            ocr_progress.progress(
+                completed / total_pages,
+                text=f"📖 Reading pages concurrently... ({completed}/{total_pages})"
+            )
+
     ocr_progress.progress(1.0, text="✅ All pages read!")
     time.sleep(0.3)
     ocr_progress.empty()
 
-    # Step 3: Merge all text and summarise
-    st.markdown("### 🧠 Step 2 — Building structured summary...")
-    all_text = "\n\n".join(
-        f"=== PAGE {pg} ===\n{txt}" for pg, txt in page_texts.items()
-    )
-
-    with st.spinner("Generating clinical summary (this takes ~20–30 seconds)..."):
-        summary_md = generate_structured_summary(all_text)
+    # Step 3: Map-Reduce Enterprise Summarization
+    st.markdown("### 🧠 Step 2 — Building Enterprise Structured Summary...")
+    
+    page_strings = [page_texts[pg] for pg in sorted(page_texts.keys())]
+    
+    from modules.summarizer.chunker import TextChunker
+    from modules.summarizer.hierarchical import HierarchicalSummarizer
+    from modules.summarizer.aggregator import MasterAggregator
+    
+    chunker = TextChunker(pages=page_strings, chunk_size=1, document_id=uploaded.name)
+    
+    if clear_cache:
+        chunker.clear_cache()
+        
+    hierarchical = HierarchicalSummarizer(model_name=SUMMARY_MODEL)
+    
+    sum_progress = st.progress(0, text="Summarizing chunks (Map-Reduce)...")
+    
+    def update_progress(current, total):
+        sum_progress.progress(current / total, text=f"Summarizing chunk {current} of {total}...")
+        
+    master_data = hierarchical.process_chunks(chunker, progress_callback=update_progress)
+    sum_progress.progress(1.0, text="✅ All chunks summarized!")
+    time.sleep(0.3)
+    sum_progress.empty()
+    
+    with st.spinner("Generating Overall Clinical Narrative..."):
+        overall_summary = hierarchical.generate_overall_summary(master_data.get("page_summaries", []))
+        master_data["overall_summary"] = overall_summary
+    
+    with st.spinner("Aggregating Master Clinical Summary..."):
+        summary_md = MasterAggregator.build_markdown_report(master_data)
 
     # Cache in session state
     st.session_state["case_summary_md"]       = summary_md

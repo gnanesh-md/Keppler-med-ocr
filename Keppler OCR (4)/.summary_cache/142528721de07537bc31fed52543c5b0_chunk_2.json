@@ -1,0 +1,23 @@
+{
+  "diagnoses": [],
+  "medications": [
+    {
+      "drug_name": "T. Cefixime",
+      "dose": "200 mg",
+      "route": "PO",
+      "frequency": "Twice a day"
+    },
+    {
+      "drug_name": "T. pantop",
+      "dose": "40 mg",
+      "route": "PO",
+      "frequency": "Twice a day"
+    }
+  ],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": []
+}

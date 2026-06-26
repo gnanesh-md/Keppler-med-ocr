@@ -11,7 +11,9 @@ Features:
   - Download in MD / PDF / DOCX formats
 """
 import streamlit as st
+import time
 import io
+import asyncio
 import json
 import fitz          # PyMuPDF
 import re
@@ -27,6 +29,13 @@ import time
 import pandas as pd
 from database.db_utils import archive_document
 from modules.unified_resolver import resolve_entities_in_text
+from modules.layout_detector import DocLayoutDetector
+from modules.reading_order import ReadingOrderEngine
+from modules.region_ocr import AsyncRegionOCR
+from modules.table_extractor import TableExtractor
+from modules.medical_corrector import MedicalCorrector
+from modules.confidence_engine import ConfidenceEngine
+from modules.grounding import VisualGrounder
 
 client = OpenAI(base_url="http://localhost:8700/v1", api_key="EMPTY")
 
@@ -54,7 +63,7 @@ def strategy_mild_enhance(img: Image.Image) -> Image.Image:
     img = ImageOps.exif_transpose(img)
     img = _upscale_if_small(img)
     img = img.convert("RGB")
-    img = ImageEnhance.Sharpness(img).enhance(1.8)
+    img = ImageEnhance.Sharpness(img).enhance(1.8) 
     img = ImageEnhance.Contrast(img).enhance(1.5)
     return img
 
@@ -461,7 +470,7 @@ BLUEPRINTS = {
         "identity": "You are an advanced Universal OCR engine capable of extracting text from ANY image. Your job is to perform complete, highly accurate, and exhaustive transcription of the entire document from top to bottom.",
         "structure": "Organize the extracted text into a clean, professional Markdown format. Use Markdown Headers (###) for sections, **bold text** for keys/labels, bullet points (-) for lists, and Markdown Tables (|---|) for any tabular or grid-like data.",
         "instructions": "MANDATORY: Extract EVERY single line of text from the image without exception. Do not truncate, omit, or summarize the content. Scan the entire image carefully and transcribe all items, values, and notes from top to bottom.",
-        "rules": "2. EXHAUSTIVE TRANSCRIPTION: Do not stop generating until the very last word of the image is transcribed.\n3. FORMATTING: Use Markdown (bolding, lists, tables) to give the text a professional structure.\n4. KEY-VALUE PAIRS: If you see a label and a value (e.g., Name: John), format it as **Name:** John.\n5. NO PREAMBLE: Start directly with the extracted data. No greetings or meta-commentary."
+        "rules": "2. EXHAUSTIVE TRANSCRIPTION: Do not stop generating until the very last word of the image is transcribed.\n3. FORMATTING: Use Markdown (bolding, lists, tables) to give the text a professional structure.\n4. KEY-VALUE PAIRS: If you see a label and a value (e.g., Name: John), format it as **Name:** John.\n5. NO PREAMBLE: Start directly with the extracted data. No greetings or meta-commentary.\n6. MISSING DATA: If any field is missing from the document, leave it completely blank. Do NOT write 'Not documented', 'N/A', or 'None'."
     },
     "LDSL Diagnostics": {
         "identity": "You are a high-performance medical OCR engine (Qwen 2.5 VL optimized).",
@@ -476,7 +485,7 @@ BLUEPRINTS = {
 **History:** DOB: [DOB] | Weight: [Weight] | Diabetes: [Yes/No] | Ultrasound: [Details]
 **Footer:** Checked By: [Name] | Area: [Location]""",
         "instructions": "MANDATORY: Transcribe every handwritten entry exactly. Use the Markdown table for all test results. Do not omit the Patient Name or History section.",
-        "rules": "2. SPATIAL AWARENESS: Maintain the exact layout and hierarchy seen in the document.\n3. HANDWRITING: Transcribe every handwritten scribble or mark. If a checkmark is present in a box, represent it as [x].\n4. NUMERICAL PRECISION: Do not round or alter any numbers, dates, or measurements.\n5. NO PREAMBLE: Start directly with the extracted data. No greetings or meta-commentary.\n6. TABLE INTEGRITY: Ensure every column of the table is populated correctly based on the visual rows."
+        "rules": "2. SPATIAL AWARENESS: Maintain the exact layout and hierarchy seen in the document.\n3. HANDWRITING: Transcribe every handwritten scribble or mark. If a checkmark is present in a box, represent it as [x].\n4. NUMERICAL PRECISION: Do not round or alter any numbers, dates, or measurements.\n5. NO PREAMBLE: Start directly with the extracted data. No greetings or meta-commentary.\n6. TABLE INTEGRITY: Ensure every column of the table is populated correctly based on the visual rows.\n7. MISSING DATA: If any field is missing from the document, leave it completely blank. Do NOT write 'Not documented', 'N/A', or 'None'."
     },
     "Healmax Diagnostics": {
         "identity": "You are a high-performance medical OCR engine (Qwen 2.5 VL optimized).",
@@ -486,7 +495,7 @@ BLUEPRINTS = {
 | S.No | Patient Name | Age/Sex | Test Code/Name | Sample Type | Barcode No | Date/Time | Customer | Referral Doctor |
 |------|-------------|---------|----------------|-------------|------------|-----------|----------|-----------------|""",
         "instructions": "Fill all 9 table columns. Do NOT merge or skip any column.",
-        "rules": "2. SPATIAL AWARENESS: Maintain the exact layout and hierarchy seen in the document.\n3. HANDWRITING: Transcribe every handwritten scribble or mark. If a checkmark is present in a box, represent it as [x].\n4. NUMERICAL PRECISION: Do not round or alter any numbers, dates, or measurements.\n5. NO PREAMBLE: Start directly with the extracted data. No greetings or meta-commentary.\n6. TABLE INTEGRITY: Ensure every column of the table is populated correctly based on the visual rows."
+        "rules": "2. SPATIAL AWARENESS: Maintain the exact layout and hierarchy seen in the document.\n3. HANDWRITING: Transcribe every handwritten scribble or mark. If a checkmark is present in a box, represent it as [x].\n4. NUMERICAL PRECISION: Do not round or alter any numbers, dates, or measurements.\n5. NO PREAMBLE: Start directly with the extracted data. No greetings or meta-commentary.\n6. TABLE INTEGRITY: Ensure every column of the table is populated correctly based on the visual rows.\n7. MISSING DATA: If any field is missing from the document, leave it completely blank. Do NOT write 'Not documented', 'N/A', or 'None'."
     }
 }
 
@@ -522,6 +531,7 @@ def render_ocr_app():
         ("last_time",    0.0),
         ("ocr_client",   ""),
         ("ocr_images",   []),   # list of original PIL images
+        ("active_grounding", None), # dict for current highlight tracking
     ]:
         if key not in st.session_state:
             st.session_state[key] = default
@@ -607,18 +617,110 @@ def render_ocr_app():
                 page_info = f"{label} of {total_pages}" if total_pages > 1 else ""
                 prompt    = build_prompt(client, page_info)
 
-                extracted, strategy_used, page_preds = call_model_with_retry(
-                    raw_img, prompt, status_box, model_name="qwen2.5-vl-7b"
-                )
-
-                if extracted:
-                    status_box.success(f"✅ {label} extracted via **{strategy_used}**")
-                    all_pages_text.append((label, extracted))
-                    all_preds.extend(page_preds)
+                # Layout Detection Layer
+                status_box.info(f"🔍 Analyzing document layout for {label}...")
+                detector = DocLayoutDetector()
+                regions = detector.detect_regions(raw_img)
+                
+                status_box.info("📚 Reconstructing Semantic Reading Order...")
+                ro_engine = ReadingOrderEngine()
+                w, h = raw_img.size
+                ordered_mapping = ro_engine.reconstruct(regions, page_width=w, page_height=h)
+                
+                # Sort regions by reading order
+                order_dict = {item['region_id']: item['reading_order'] for item in ordered_mapping}
+                regions.sort(key=lambda r: order_dict.get(r['region_id'], 9999))
+                
+                status_box.info(f"✂️ Detected {len(regions)} layout regions. Processing asynchronously in batches...")
+                
+                non_table_regions = []
+                table_regions = []
+                for r in regions:
+                    if r['region_type'] == 'Table':
+                        table_regions.append(r)
+                    else:
+                        non_table_regions.append(r)
+                        
+                # Execute async region OCR for standard content
+                async_ocr = AsyncRegionOCR(max_concurrent=3, model_name="qwen2.5-vl-7b")
+                table_extractor = TableExtractor()
+                
+                structured_results = asyncio.run(async_ocr.process_page_regions(
+                    regions=non_table_regions, 
+                    raw_img=raw_img, 
+                    page_num=idx+1, 
+                    prompt=prompt
+                ))
+                
+                # Process tables with TATR
+                for t_reg in table_regions:
+                    status_box.info(f"📊 Extracting Table Structure using TATR...")
+                    pad = 10
+                    box = t_reg['bbox']
+                    w, h = raw_img.size
+                    crop_box = (max(0, box[0]-pad), max(0, box[1]-pad), min(w, box[2]+pad), min(h, box[3]+pad))
+                    table_img = raw_img.crop(crop_box)
+                    
+                    df = asyncio.run(table_extractor.extract(table_img, async_ocr, page_num=idx+1))
+                    if not df.empty:
+                        md_table = df.to_markdown(index=False)
+                        structured_results.append({
+                            "page": idx+1,
+                            "region_id": t_reg["region_id"],
+                            "region_type": "Table",
+                            "text": md_table,
+                            "bbox": box,
+                            "predictions": []
+                        })
+                
+                # Re-sort results to preserve semantic reading order
+                structured_results.sort(key=lambda r: order_dict.get(r['region_id'], 9999))
+                
+                page_extracted_parts = []
+                success_count = 0
+                
+                for res in structured_results:
+                    if res["text"]:
+                        success_count += 1
+                        page_extracted_parts.append(f"### [{res['region_type']}]\n{res['text']}")
+                        layout_conf = res.get("layout_confidence", 1.0)
+                        for pred in res.get("predictions", []):
+                            sem_conf = float(pred.get("Confidence", 0.0))
+                            final_conf = ConfidenceEngine.calculate_final_confidence(layout_conf, sem_conf)
+                            pred["Confidence"] = f"{final_conf:.2f}"
+                            pred["page"] = idx + 1
+                            pred["bbox"] = res.get("bbox", [])
+                            all_preds.append(pred)
+                
+                if success_count > 0:
+                    final_page_text = "\n\n".join(page_extracted_parts)
+                    
+                    # Medical Correction Layer
+                    status_box.info("⚕️ Running Medical Terminology Correction...")
+                    med_corrector = MedicalCorrector()
+                    correction_result = asyncio.run(med_corrector.correct_text(final_page_text))
+                    
+                    corrected_page_text = correction_result["corrected_text"]
+                    
+                    # Append corrections to the predictions array for UI display
+                    for c in correction_result.get("corrections", []):
+                        sem_conf = float(c.get('confidence', 0.0))
+                        final_conf = ConfidenceEngine.calculate_final_confidence(1.0, sem_conf)
+                        all_preds.append({
+                            "Original Text": c["original"],
+                            "Predicted Code": "CORRECTION",
+                            "Predicted Name": c["corrected"],
+                            "Type": "Medical Typo",
+                            "Confidence": f"{final_conf:.2f}",
+                            "page": idx + 1,
+                            "bbox": []
+                        })
+                        
+                    status_box.success(f"✅ {label} extracted ({success_count}/{len(regions)} regions, {len(correction_result.get('corrections', []))} corrections)")
+                    all_pages_text.append((label, corrected_page_text))
                 else:
                     status_box.error(
-                        f"❌ {label}: Extraction failed. The model returned no text or the content was too short. "
-                        "Try a different model or check if the image is clear."
+                        f"❌ {label}: Extraction failed for all regions."
                     )
                     all_pages_text.append((label, f"*[{label}: Extraction failed — content too short or empty]*"))
 
@@ -919,6 +1021,20 @@ def render_ocr_app():
             else:
                 tab1, tab2, tab3, tab4 = st.tabs(["📄 Document View", "📊 Data Grid", "🎯 Entities (Grid)", "📋 Entities (Vertical)"])
                 with tab1:
+                    if st.session_state.active_grounding:
+                        gr = st.session_state.active_grounding
+                        if st.button("❌ Clear Highlight"):
+                            st.session_state.active_grounding = None
+                            st.rerun()
+                        
+                        page_idx = gr["page"] - 1
+                        if 0 <= page_idx < len(st.session_state.ocr_images):
+                            img = st.session_state.ocr_images[page_idx]
+                            highlighted = VisualGrounder.draw_highlight(img, gr["bbox"], label=gr.get("label", ""))
+                            st.image(highlighted, use_container_width=True)
+                        else:
+                            st.warning("Original image not found for grounding.")
+                            
                     render_plain_text(st.session_state.ocr_combined)
                 with tab2:
                     st.markdown("### 📈 Extracted Data Tables")
@@ -982,23 +1098,25 @@ def render_ocr_app():
                     if not preds_df.empty:
                         for _, row in preds_df.iterrows():
                             conf = float(row['Confidence'])
-                            conf_color = "#00d2ff" if conf > 0.4 else "#f39c12" if conf > 0.3 else "#e74c3c"
+                            conf_color = "#2ecc71" if conf >= 0.80 else "#f39c12" if conf >= 0.50 else "#e74c3c"
+                            alert_icon = "⚠️ REVIEW:" if conf < 0.80 else "⚡ Score:"
+                            
                             card_html = f'''
                             <div style="
                                 background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
-                                border: 1px solid rgba(255,255,255,0.15);
+                                border: 1px solid {'rgba(243, 156, 18, 0.5)' if conf < 0.80 else 'rgba(255,255,255,0.15)'};
                                 border-radius: 16px;
                                 padding: 20px;
                                 margin-bottom: 16px;
                                 backdrop-filter: blur(12px);
                                 -webkit-backdrop-filter: blur(12px);
-                                box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+                                box-shadow: {'0 0 15px rgba(243, 156, 18, 0.2)' if conf < 0.80 else '0 4px 15px rgba(0,0,0,0.05)'};
                                 font-family: 'Inter', 'Segoe UI', sans-serif;
                                 transition: transform 0.3s ease, box-shadow 0.3s ease;
-                            " onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 24px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.05)';">
+                            " onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 24px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow={'0 0 15px rgba(243, 156, 18, 0.2)' if conf < 0.80 else '0 4px 15px rgba(0,0,0,0.05)'};">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                                     <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #fff; background: {conf_color}; padding: 4px 12px; border-radius: 20px;">{row['Type']}</span>
-                                    <span style="font-size: 12px; font-weight: 600; color: {conf_color};">⚡ Score: {conf:.2f}</span>
+                                    <span style="font-size: 12px; font-weight: 600; color: {conf_color};">{alert_icon} {conf:.2f}</span>
                                 </div>
                                 <div style="font-size: 14px; font-weight: 500; color: #888; margin-bottom: 6px;">
                                     Extracted: <strong style="color: inherit; font-style: italic;">"{row['Original Text']}"</strong>
@@ -1009,6 +1127,16 @@ def render_ocr_app():
                             </div>
                             '''
                             st.markdown(card_html, unsafe_allow_html=True)
+                            
+                            bbox = row.get('bbox')
+                            if isinstance(bbox, list) and len(bbox) == 4:
+                                if st.button("🔍 View Source", key=f"ground_{_}"):
+                                    st.session_state.active_grounding = {
+                                        "page": int(row.get("page", 1)),
+                                        "bbox": bbox,
+                                        "label": row["Predicted Code"]
+                                    }
+                                    st.rerun()
                     else:
                         st.info("No medical entities were confidently detected in the text.")
 

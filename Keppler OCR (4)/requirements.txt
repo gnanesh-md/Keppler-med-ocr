@@ -36,3 +36,13 @@ xhtml2pdf>=0.2.15                # HTML-to-PDF converter (precision_ocr.py)
 markdown>=3.5.0                  # Markdown-to-HTML for PDF export (precision_ocr.py)
 openpyxl>=3.1.0                  # Excel read/write engine for pandas (precision_ocr.py, scripts)
 pandas>=2.1.0                    # DataFrame operations (precision_ocr.py, admin_panel.py, scripts)
+
+# ── Layout Detection ─────────────────────────────────────────────────────────
+ultralytics>=8.1.0               # DocLayout-YOLO execution engine
+huggingface-hub>=0.20.0          # DocLayout-YOLO weights downloader
+opencv-python-headless>=4.8.0    # Required by ultralytics for image operations
+
+# ── Table Extraction ─────────────────────────────────────────────────────────
+transformers>=4.38.0             # Microsoft Table Transformer (TATR)
+torch>=2.0.0                     # PyTorch backend for TATR
+torchvision>=0.15.0              # Torchvision for image ops
