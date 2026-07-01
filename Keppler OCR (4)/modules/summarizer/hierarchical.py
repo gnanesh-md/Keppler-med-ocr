@@ -15,48 +15,31 @@ class HierarchicalSummarizer:
         self.client = OpenAI(base_url=base_url, api_key="EMPTY")
         
     def _extract_chunk_data(self, chunk_text: str) -> dict:
-        prompt = (
-            "You are a clinical data extraction engine. Analyze the following chunk of medical "
-            "records and extract all relevant data into a strict JSON structure.\n"
-            "Return ONLY a JSON object with the following keys. If a field has no data, return an empty list [].\n"
-            "Do NOT include phrases like 'Not documented', 'N/A', 'None', or 'Not mentioned'. Only extract real data.\n"
-            "Keys:\n"
-            '- "diagnoses": list of strings (e.g. primary, secondary diagnoses)\n'
-            '- "medications": list of strings (drug name, dose, frequency)\n'
-            '- "allergies": list of strings\n'
-            '- "procedures": list of strings (surgery, procedures, dates)\n'
-            '- "lab_results": list of strings (test name, result, units)\n'
-            '- "admissions": list of strings (dates, vitals, scores, patient info)\n'
-            '- "recommendations": list of strings (discharge instructions, education, nursing plans)\n'
-            '- "timeline_events": list of objects [{"date": "YYYY-MM-DD", "event": "description"}] (normalize all found dates)\n'
-            '- "page_summary": string (a concise 1-2 sentence narrative summary of this chunk)\n\n'
-            f"TEXT CHUNK:\n{chunk_text}\n\n"
-            "IMPORTANT: Output ONLY valid JSON."
-        )
+        from .blueprint_summary import load_blueprint, build_extraction_prompt
+        BP = load_blueprint()
+        prompt = build_extraction_prompt(BP, chunk_text)
         
         try:
             resp = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
-                max_tokens=2048
+                max_tokens=8192
             )
             raw = resp.choices[0].message.content.strip()
             
-            # Clean markdown formatting if present
-            if raw.startswith("```json"): raw = raw[7:]
-            if raw.startswith("```"): raw = raw[3:]
-            if raw.endswith("```"): raw = raw[:-3]
+            # Robust JSON extraction
+            import re
+            match = re.search(r'\{.*\}', raw, re.DOTALL)
+            if match:
+                raw = match.group(0)
             
-            data = json.loads(raw.strip())
+            data = json.loads(raw)
             return data
         except Exception as e:
             logger.error(f"Chunk extraction failed: {e}")
             # Return empty skeleton to prevent pipeline crash
-            return {
-                "diagnoses": [], "medications": [], "allergies": [], 
-                "procedures": [], "lab_results": [], "admissions": [], "recommendations": [], "timeline_events": [], "page_summary": ""
-            }
+            return {}
 
     def process_chunks(self, chunker, progress_callback=None) -> dict:
         """
@@ -64,17 +47,17 @@ class HierarchicalSummarizer:
         Merges results into a master structured dictionary.
         """
         import concurrent.futures
-        from streamlit.runtime.scriptrunner import add_script_run_ctx
+        from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
 
         chunks = chunker.get_chunks()
         total = len(chunks)
+        ctx = get_script_run_ctx()
         
-        master_data = {
-            "diagnoses": [], "medications": [], "allergies": [], 
-            "procedures": [], "lab_results": [], "admissions": [], "recommendations": [], "timeline_events": [], "page_summaries": []
-        }
+        master_data = {}
         
-        def _process_single_chunk(i, chunk_text):
+        def _process_single_chunk(i, chunk_text, ctx):
+            if ctx:
+                add_script_run_ctx(ctx=ctx)
             data = chunker.load_cached_chunk(i)
             if not data:
                 data = self._extract_chunk_data(chunk_text)
@@ -87,8 +70,7 @@ class HierarchicalSummarizer:
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             futures = {}
             for i, chunk_text in enumerate(chunks):
-                future = executor.submit(_process_single_chunk, i, chunk_text)
-                add_script_run_ctx(future)
+                future = executor.submit(_process_single_chunk, i, chunk_text, ctx)
                 futures[future] = i
                 
             for future in concurrent.futures.as_completed(futures):
@@ -98,19 +80,35 @@ class HierarchicalSummarizer:
                 if progress_callback:
                     progress_callback(completed, total)
                     
-        # Merge sequentially to preserve page_summaries order
+        # Deep merge sections from each chunk into master_data
         for data in results:
-            if not data:
+            if not data or not isinstance(data, dict):
                 continue
-            for key in master_data.keys():
-                if key == "page_summaries":
-                    if "page_summary" in data and isinstance(data["page_summary"], str) and data["page_summary"].strip():
-                        master_data["page_summaries"].append(data["page_summary"].strip())
-                elif key in data and isinstance(data[key], list):
-                    for item in data[key]:
-                        # Avoid pure duplicates
-                        if item not in master_data[key]:
-                            master_data[key].append(item)
+            for sec_id, sec_dict in data.items():
+                if not isinstance(sec_dict, dict):
+                    continue
+                if sec_id not in master_data:
+                    master_data[sec_id] = {}
+                for key, val in sec_dict.items():
+                    if val is not None:
+                        # For lists (tables), concatenate to avoid losing earlier rows
+                        if isinstance(val, list):
+                            if key not in master_data[sec_id]:
+                                master_data[sec_id][key] = []
+                            if isinstance(master_data[sec_id][key], list):
+                                for item in val:
+                                    if item and item not in master_data[sec_id][key]:
+                                        master_data[sec_id][key].append(item)
+                        elif isinstance(val, dict):
+                            if key not in master_data[sec_id] or not isinstance(master_data[sec_id][key], dict):
+                                master_data[sec_id][key] = {}
+                            for k, v in val.items():
+                                if v is not None:
+                                    master_data[sec_id][key][k] = v
+                        else:
+                            # Scalar: later non-null wins
+                            if str(val).strip().lower() not in ("", "null", "none", "n/a", "na", "—"):
+                                master_data[sec_id][key] = val
                             
         return master_data
 

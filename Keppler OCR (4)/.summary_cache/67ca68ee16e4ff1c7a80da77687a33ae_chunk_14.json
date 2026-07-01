@@ -1,0 +1,40 @@
+{
+  "diagnoses": [],
+  "medications": [],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [
+    {
+      "date": "2023-01-01",
+      "event": "New Confusion or Agitation"
+    },
+    {
+      "date": "2023-01-02",
+      "event": "Alert or Confusion"
+    },
+    {
+      "date": "2023-01-03",
+      "event": "Responds to Verbal Stimuli Only"
+    },
+    {
+      "date": "2023-01-04",
+      "event": "Responds to Painful Stimuli Only"
+    },
+    {
+      "date": "2023-01-05",
+      "event": "Responds to Unconscious Stimuli Only"
+    },
+    {
+      "date": "2023-01-06",
+      "event": "Unconscious"
+    },
+    {
+      "date": "2023-01-07",
+      "event": "Unconscious"
+    }
+  ],
+  "page_summary": "The MEWS scoring parameters indicate various levels of confusion, alertness, and responsiveness, with some patients showing signs of unconsciousness."
+}

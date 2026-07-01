@@ -1,0 +1,17 @@
+{
+  "diagnoses": [],
+  "medications": [],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [
+    {
+      "test_name": "Scanning",
+      "result": "Single RBS",
+      "units": ""
+    }
+  ],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [],
+  "page_summary": "Patient KONDU GOURAMMA underwent scanning investigations at GREAT EASTERN MEDICAL SCHOOL & HOSPITAL."
+}

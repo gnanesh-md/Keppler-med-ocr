@@ -1,0 +1,16 @@
+{
+  "diagnoses": [],
+  "medications": [],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [
+    {
+      "date": "2023-04-07",
+      "event": "Nurse handing over and taking over"
+    }
+  ],
+  "page_summary": "Nurse handing over and taking over at GREAT EASTERN MEDICAL SCHOOL & HOSPITAL."
+}

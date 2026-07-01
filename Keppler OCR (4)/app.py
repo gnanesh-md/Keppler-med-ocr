@@ -29,7 +29,7 @@ st.markdown("""
     </script>
 """, unsafe_allow_html=True)
 
-# --- Constants & Configuration (ABSOLUTE PATHS FIX) ---
+# ---  Constants& Configuration (ABSOLUTE PATHS FIX) ---
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 TEMP_DIR = os.path.join(BASE_DIR, "temp_uploads")
 os.makedirs(TEMP_DIR, exist_ok=True)
@@ -93,8 +93,8 @@ def main():
             #MainMenu {visibility: hidden; display: none;}
             </style>
         """), unsafe_allow_html=True)
-
         # --- SaaS SIDEBAR NAVIGATION ---
+
         with st.sidebar:
             st.markdown(f"### 👋 Welcome back, **{st.session_state.username}**!")
             st.divider()

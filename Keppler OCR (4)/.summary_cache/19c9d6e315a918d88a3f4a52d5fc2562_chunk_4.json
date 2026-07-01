@@ -1,0 +1,49 @@
+{
+  "diagnoses": [],
+  "medications": [],
+  "allergies": [],
+  "procedures": [
+    "SURGERY",
+    "SURGERY",
+    "SURGEON"
+  ],
+  "lab_results": [
+    {
+      "test_name": "BP",
+      "result": "120/30mmHg",
+      "units": ""
+    },
+    {
+      "test_name": "FBS/RBS",
+      "result": "90mg/dl",
+      "units": ""
+    },
+    {
+      "test_name": "PRE OP VISION",
+      "result": "",
+      "units": ""
+    },
+    {
+      "test_name": "IOP",
+      "result": "11.0 mmHg",
+      "units": ""
+    }
+  ],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [
+    {
+      "date": "2023-01-01",
+      "event": "SURGERY"
+    },
+    {
+      "date": "2023-01-01",
+      "event": "SURGERY"
+    },
+    {
+      "date": "2023-01-01",
+      "event": "SURGEON"
+    }
+  ],
+  "page_summary": "Pre-operative check for eye surgery involving IOL power and complications."
+}

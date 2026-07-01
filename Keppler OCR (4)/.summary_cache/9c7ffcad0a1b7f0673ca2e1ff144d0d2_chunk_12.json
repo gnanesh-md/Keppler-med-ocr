@@ -1,0 +1,44 @@
+{
+  "diagnoses": [],
+  "medications": [],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [
+    {
+      "date": "2026-05-28",
+      "event": "Case received from @ shift duty staff"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Patient condition is well"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Patient vitals checked & recorded"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Provide comfortable position to the Patient"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Provide Health Education"
+    },
+    {
+      "date": "2026-05-29",
+      "event": "Patient Bed making done"
+    },
+    {
+      "date": "2026-05-29",
+      "event": "Patient vitals checked & recorded"
+    },
+    {
+      "date": "2026-05-29",
+      "event": "Patient Treatment given"
+    }
+  ],
+  "page_summary": "Nurses notes documenting patient vitals, shifts, and health education."
+}

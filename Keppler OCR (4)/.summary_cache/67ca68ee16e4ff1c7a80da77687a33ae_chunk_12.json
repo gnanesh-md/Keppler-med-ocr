@@ -1,0 +1,46 @@
+{
+  "diagnoses": [],
+  "medications": [],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [
+    "Provide Health Education Explain about- Eye care prevention"
+  ],
+  "timeline_events": [
+    {
+      "date": "2026-05-28",
+      "event": "Case received from @ shift duty staff"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Patient condition is well"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Patient vitals checked & Recorded"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Provide comfortable position to the patient"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Provide Health Education Explain about- Eye care prevention"
+    },
+    {
+      "date": "2026-05-29",
+      "event": "Patient Bed making done"
+    },
+    {
+      "date": "2026-05-29",
+      "event": "Patient vitals checked & recorded"
+    },
+    {
+      "date": "2026-05-29",
+      "event": "Patient Treatment given"
+    }
+  ],
+  "page_summary": "Nurses notes for patient KONDU GOURAMMA, age 60 years, showing routine monitoring and health education."
+}

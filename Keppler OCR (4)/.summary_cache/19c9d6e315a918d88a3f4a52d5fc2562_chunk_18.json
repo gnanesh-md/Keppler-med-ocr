@@ -1,0 +1,52 @@
+{
+  "diagnoses": [],
+  "medications": [],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [
+    {
+      "date": "2026-05-28",
+      "event": "Patient complaints"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Food/drug allergies"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "MEWS scoring required"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Vital signs unstable"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Skin integrity check done"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Need for position change"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Fall risk"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "DVT prophylaxis"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Due medications"
+    },
+    {
+      "date": "2026-05-28",
+      "event": "Patient on high alert medication"
+    }
+  ],
+  "page_summary": "Patient KONDU GOURAMMA is being monitored in ICU, with various assessments including complaints, allergies, MEWS scoring, vital signs, skin integrity, fall risk, DVT prophylaxis, and medication status."
+}

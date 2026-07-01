@@ -85,6 +85,8 @@ def format_annotation(key: str, info: dict) -> str:
 
 def is_medical_candidate(text: str) -> bool:
     t = text.strip()
+    if t.upper() in EXACT_CODE_MAP:
+        return True
     if len(t) < 2:
         return False
     if re.match(r'^\d{1,2}\s*(am|pm)$', t, re.I):

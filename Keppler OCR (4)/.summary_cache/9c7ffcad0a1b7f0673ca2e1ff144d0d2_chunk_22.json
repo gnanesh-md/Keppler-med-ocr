@@ -1,0 +1,63 @@
+{
+  "diagnoses": [],
+  "medications": [
+    {
+      "drug_name": "T. Cefixime",
+      "dose": "200 mg",
+      "route": "PO",
+      "frequency": "Twice a day"
+    },
+    {
+      "drug_name": "T. pantop",
+      "dose": "40 mg",
+      "route": "PO",
+      "frequency": "Twice"
+    },
+    {
+      "drug_name": "T. cefirime",
+      "dose": "200 mg",
+      "route": "PO",
+      "frequency": "Twice"
+    },
+    {
+      "drug_name": "Osm",
+      "dose": "2-1 Osm",
+      "route": "SIC",
+      "frequency": "stat"
+    },
+    {
+      "drug_name": "Irop",
+      "dose": "2 drop",
+      "route": "Eye",
+      "frequency": "3 time"
+    }
+  ],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [
+    {
+      "date": "2023-05-28",
+      "event": "Drug administration: T. Cefixime 200 mg PO Twice a day at 8pm"
+    },
+    {
+      "date": "2023-05-29",
+      "event": "Drug administration: T. pantop 40 mg PO Twice at 1AM"
+    },
+    {
+      "date": "2023-05-29",
+      "event": "Drug administration: T. cefirime 200 mg PO Twice at 8AM"
+    },
+    {
+      "date": "2023-05-29",
+      "event": "Drug administration: Osm 2-1 Osm SIC stat at 8AM"
+    },
+    {
+      "date": "2023-05-29",
+      "event": "Drug administration: Irop 2 drop Eye 3 time at 6AM"
+    }
+  ],
+  "page_summary": "Treatment chart for patient Kondu Gouramma, age 60 years, includes multiple drug administrations on different dates."
+}

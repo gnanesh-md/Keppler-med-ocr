@@ -1,0 +1,34 @@
+{
+  "diagnoses": [],
+  "medications": [],
+  "allergies": [],
+  "procedures": [
+    "SURGERY",
+    "SURGERY",
+    "SURGEON"
+  ],
+  "lab_results": [
+    "BP 120/90mmHg",
+    "FBS/RBS 90mg/dl",
+    "IOP 11.0 mmHg",
+    "CONSENT",
+    "XYLOCAIN TEST Given"
+  ],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [
+    {
+      "date": "2023-01-01",
+      "event": "SURGERY"
+    },
+    {
+      "date": "2023-01-01",
+      "event": "SURGERY"
+    },
+    {
+      "date": "2023-01-01",
+      "event": "SURGEON"
+    }
+  ],
+  "page_summary": "Pre-operative check for eye surgery involving IOL power and complications."
+}

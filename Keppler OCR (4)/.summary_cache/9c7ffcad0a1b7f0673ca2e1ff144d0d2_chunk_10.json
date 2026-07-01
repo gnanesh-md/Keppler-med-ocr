@@ -1,0 +1,22 @@
+{
+  "diagnoses": [
+    "Blurred vision & visual impairment related"
+  ],
+  "medications": [],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [
+    {
+      "date": "2023-09-12",
+      "event": "Patient verbalizes heat patient having blurred vision & reduced visual sensitivity"
+    },
+    {
+      "date": "2023-09-12",
+      "event": "Patient verbalizes improvement"
+    }
+  ],
+  "page_summary": "Patient verbalizes heat patient having blurred vision & reduced visual sensitivity, and verbalizes improvement."
+}

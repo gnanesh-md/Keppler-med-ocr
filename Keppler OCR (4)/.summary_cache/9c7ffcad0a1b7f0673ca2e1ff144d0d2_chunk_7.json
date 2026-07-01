@@ -1,0 +1,16 @@
+{
+  "diagnoses": [],
+  "medications": [],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [
+    {
+      "date": "2023-09-15",
+      "event": "Pain assessment"
+    }
+  ],
+  "page_summary": "Pain assessment sheet for patient Kondu Gouramma at 8 AM on 15th September 2023."
+}

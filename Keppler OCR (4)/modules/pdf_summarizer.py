@@ -5,9 +5,8 @@ sends each page through the vision model (qwen2.5vl:32b),
 builds a structured clinical summary, and exports it as a
 professionally styled 4-5 page PDF, DOCX, or Markdown file.
 """
-
 import streamlit as st
-import fitz          # PyMuPDF
+import fitz                          # PyMuPDF
 from openai import OpenAI
 import base64
 import io
@@ -22,13 +21,12 @@ from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import concurrent.futures
 from streamlit.runtime.scriptrunner import add_script_run_ctx
-
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 OCR_MODEL     = "qwen2.5-vl-7b"   # vision model for reading scanned pages
-SUMMARY_MODEL = "qwen2.5-vl-7b"      # text model for summarising
-MAX_IMG_DIM   = 1024               # High resolution image extraction
+SUMMARY_MODEL = "qwen2.5-vl-7b"   # text model for summarising
+MAX_IMG_DIM   = 1024              # High resolution image extraction
 JPEG_QUALITY  = 75
 
 client = OpenAI(base_url="http://localhost:8700/v1", api_key="EMPTY")
@@ -424,7 +422,6 @@ def render_pdf_summarizer():
         futures = {}
         for pg_num, img_bytes in images_to_process.items():
             future = executor.submit(extract_page_text, img_bytes, pg_num)
-            add_script_run_ctx(future)
             futures[future] = pg_num
 
         for future in concurrent.futures.as_completed(futures):

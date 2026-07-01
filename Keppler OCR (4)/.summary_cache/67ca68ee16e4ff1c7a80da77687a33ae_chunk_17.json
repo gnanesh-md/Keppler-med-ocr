@@ -1,0 +1,32 @@
+{
+  "diagnoses": [],
+  "medications": [],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [
+    {
+      "date": "2023-01-01",
+      "event": "New Confusion (NC) or Agitation (A)"
+    },
+    {
+      "date": "2023-01-02",
+      "event": "Alert (A) or long-standing Confusion (C)"
+    },
+    {
+      "date": "2023-01-03",
+      "event": "Responds to VERBAL (V) stimuli only"
+    },
+    {
+      "date": "2023-01-04",
+      "event": "Responds to PAINFUL (P) stimuli only"
+    },
+    {
+      "date": "2023-01-05",
+      "event": "UNCONSCIOUS (U)"
+    }
+  ],
+  "page_summary": "The MEWS scoring parameters indicate various levels of confusion, agitation, and responsiveness, with specific physiological observations recorded."
+}

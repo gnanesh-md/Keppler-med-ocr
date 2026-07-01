@@ -1,0 +1,16 @@
+{
+  "diagnoses": [],
+  "medications": [],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [
+    {
+      "date": "Not documented",
+      "event": ""
+    }
+  ],
+  "page_summary": "Fall prevention intervention bundle guidelines for low, medium, and high-risk patients."
+}

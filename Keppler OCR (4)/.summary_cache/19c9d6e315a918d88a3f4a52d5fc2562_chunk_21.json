@@ -1,0 +1,40 @@
+{
+  "diagnoses": [],
+  "medications": [],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [
+    {
+      "date": "2023-04-01",
+      "event": "Day 1"
+    },
+    {
+      "date": "2023-04-02",
+      "event": "Day 2"
+    },
+    {
+      "date": "2023-04-03",
+      "event": "Day 3"
+    },
+    {
+      "date": "2023-04-04",
+      "event": "Day 4"
+    },
+    {
+      "date": "2023-04-05",
+      "event": "Day 5"
+    },
+    {
+      "date": "2023-04-06",
+      "event": "Day 6"
+    },
+    {
+      "date": "2023-04-07",
+      "event": "Day 7"
+    }
+  ],
+  "page_summary": "Patient KONDU GOURAMMA is under observation with various parameters scored over multiple days."
+}

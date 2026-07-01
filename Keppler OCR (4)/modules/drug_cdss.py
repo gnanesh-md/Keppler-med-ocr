@@ -16,7 +16,8 @@ from pathlib import Path
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
-CDSS_JSON_PATH = Path(__file__).parent.parent / "datasets" / "drug_cdss_schema.json"
+
+CDSS_JSON_PATH = Path(__file__).parent.parent / "datasets" / "diclofenac_amoxicillin_cdss.json"
 
 SEVERITY_ORDER  = ["CONTRAINDICATED", "HIGH", "MODERATE", "LOW", "INFO"]
 SEVERITY_COLORS = {
@@ -37,6 +38,7 @@ SEVERITY_ICONS = {
 # ─────────────────────────────────────────────────────────────────────────────
 # LOAD CDSS DATA
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @st.cache_resource
 def load_cdss_data() -> dict:
@@ -67,7 +69,6 @@ def load_cdss_data() -> dict:
         st.error(f"Failed to load CDSS data: {e}")
         return {}
 
-
 def get_available_drugs(cdss_data: dict) -> list[str]:
     return [d["name"] for d in cdss_data.get("drugs", [])]
 
@@ -82,14 +83,41 @@ def get_drug_data(cdss_data: dict, drug_name: str) -> dict | None:
 # CDSS ENGINE — evaluate rules against patient profile
 # ─────────────────────────────────────────────────────────────────────────────
 
+def evaluate_trigger(trigger: str, env: dict) -> bool:
+    import re
+    expr = trigger
+    expr = re.sub(r'\bOR\b', 'or', expr)
+    expr = re.sub(r'\bAND\b', 'and', expr)
+    
+    def contains_replacer(match):
+        var = match.group(1).strip()
+        val = match.group(2).strip()
+        return f"({val}.lower() in [str(item).lower() for item in {var}] if isinstance({var}, list) else {val}.lower() in str({var}).lower())"
+        
+    expr = re.sub(r'([a-zA-Z0-9_]+)\s+CONTAINS\s+(\'[^\']+\'|"[^"]+")', contains_replacer, expr)
+    expr = re.sub(r'\bIN\b', 'in', expr)
+    
+    class SafeNone:
+        def __lt__(self, other): return False
+        def __le__(self, other): return False
+        def __gt__(self, other): return False
+        def __ge__(self, other): return False
+        def __eq__(self, other): return other is None
+        def __ne__(self, other): return other is not None
+        def __str__(self): return ""
+        def __bool__(self): return False
+        def __contains__(self, other): return False
+        
+    safe_env = {k: (SafeNone() if v is None else v) for k, v in env.items()}
+    
+    try:
+        return eval(expr, {"__builtins__": {}, "str": str, "isinstance": isinstance, "list": list}, safe_env)
+    except Exception:
+        return False
+
 def evaluate_drug(patient: dict, labs: dict, drug_data: dict) -> list[dict]:
-    """
-    Returns a list of alert dicts:
-    { severity, category, message, rule_name }
-    """
     alerts = []
-    rules  = drug_data.get("cdss_rules", {})
-    name   = drug_data.get("name", "Drug")
+    name = drug_data.get("name", "Drug")
 
     def add(severity, category, message, rule=""):
         alerts.append({
@@ -100,175 +128,59 @@ def evaluate_drug(patient: dict, labs: dict, drug_data: dict) -> list[dict]:
             "rule":     rule,
         })
 
-    # ── 1. BOX WARNING (always show) ─────────────────────────────────────────
-    box = rules.get("box_warning", {})
-    for k, v in box.items():
-        if k != "note" and isinstance(v, str):
-            add("HIGH", "⬛ Box Warning", v, k)
-
-    # ── 2. CONTRAINDICATIONS ────────────────────────────────────────────────
-    contra = rules.get("contraindications", {})
-
-    # Allergy check
-    allergy_hist = [a.lower() for a in patient.get("allergy_history", [])]
-    trigger_drugs = {
-        "Diclofenac": ["diclofenac","nsaid","aspirin","ibuprofen","naproxen","nsaids"],
-        "Amoxicillin": ["amoxicillin","penicillin","ampicillin","beta-lactam"],
+    # Prepare environment for triggers
+    env = {
+        'pregnancy': patient.get('pregnancy', 'No'),
+        'pregnancy_trimester': patient.get('pregnancy_trimester', '').upper(),
+        'gestational_age_weeks': patient.get('gestational_weeks', 0) or 0,
+        'egfr': labs.get('egfr'),
+        'crcl': labs.get('crcl'),
+        'renal_impairment': patient.get('dialysis_status', 'None').capitalize(), # fallback
+        'hepatic_impairment': patient.get('hepatic_impairment', 'None').capitalize(),
+        'cv_history': patient.get('cv_history', []),
+        'comorbid': patient.get('comorbid', []),
+        'allergy_history': patient.get('allergy_history', []),
+        'gi_risk': patient.get('gi_risk', []),
+        'high_risk_meds': patient.get('high_risk_meds', []),
+        'age': patient.get('age', 0),
+        'alcohol_use': patient.get('alcohol_use', 'None').capitalize(),
+        'smoking_status': patient.get('smoking_status', 'Non-smoker'),
+        'alt': labs.get('alt'),
+        'ast': labs.get('ast'),
+        'hemoglobin': labs.get('hemoglobin'),
+        'dialysis_status': patient.get('dialysis_status', 'None').capitalize(),
+        'ULN': 40
     }
-    for drug_key, allergens in trigger_drugs.items():
-        if drug_key.lower() == name.lower():
-            if any(a in " ".join(allergy_hist) for a in allergens):
-                add("CONTRAINDICATED", "Allergy", contra.get("hypersensitivity_to_drug", "Allergy to this drug detected."), "allergy")
-
-    # Pregnancy trimester check (Diclofenac specific)
-    if patient.get("pregnancy") == "Yes":
-        tri = patient.get("pregnancy_trimester", "").lower()
-        preg_rules = rules.get("warnings_by_condition", {}).get("pregnancy", {})
-        tri_rules  = preg_rules.get("trimester_rules", {})
-        for tri_key, tri_data in tri_rules.items():
-            if tri_key in tri or tri == "third":
-                add(tri_data["severity"], f"Pregnancy ({tri_data.get('category','')})",
-                    tri_data["message"], "pregnancy")
-                break
-        if not tri_rules:
-            # Simple pregnancy warning (Amoxicillin)
-            if preg_rules:
-                add(preg_rules.get("severity","LOW"),
-                    f"Pregnancy ({preg_rules.get('category','')}) ",
-                    preg_rules.get("message","Use with caution in pregnancy."),
-                    "pregnancy")
-
-    # Breastfeeding
-    if patient.get("breastfeeding") == "Yes":
-        bf_rule = rules.get("warnings_by_condition", {}).get("breastfeeding", {})
-        if bf_rule:
-            add(bf_rule.get("severity","MODERATE"), "Breastfeeding",
-                bf_rule.get("message","Use with caution during breastfeeding."), "breastfeeding")
-
-    # ── 3. CONDITION-BASED WARNINGS ─────────────────────────────────────────
-    w = rules.get("warnings_by_condition", {})
-
-    # CV risk
-    cv_rule = w.get("cv_risk", {})
-    if cv_rule:
-        comorbid_lower  = [c.lower() for c in patient.get("comorbid", [])]
-        cv_hist_lower   = [c.lower() for c in patient.get("cv_history", [])]
-        triggers        = [t.lower() for t in cv_rule.get("trigger_values", [])]
-        all_conditions  = comorbid_lower + cv_hist_lower
-        if any(any(t in c for t in triggers) for c in all_conditions):
-            add(cv_rule["severity"], "CV Risk", cv_rule["message"], "cv_risk")
-
-    # GI risk
-    gi_rule = w.get("gi_risk", {})
-    if gi_rule:
-        gi_flags   = [c.lower() for c in patient.get("gi_risk", [])]
-        hi_meds    = [c.lower() for c in patient.get("high_risk_meds", [])]
-        comorbid   = [c.lower() for c in patient.get("comorbid", [])]
-        triggers   = [t.lower() for t in gi_rule.get("trigger_values", [])]
-        all_f      = gi_flags + hi_meds + comorbid
-        if any(any(t in f for t in triggers) for f in all_f):
-            add(gi_rule["severity"], "GI Risk", gi_rule["message"], "gi_risk")
-
-    # Renal risk
-    renal_rule = w.get("renal_risk", {}) or w.get("renal_impairment", {})
-    if renal_rule:
-        egfr  = labs.get("egfr")
-        crcl  = labs.get("crcl")
-        cr    = labs.get("creatinine")
-        renal_flag = False
-        dose_adj_msg = ""
-
-        if egfr is not None and egfr < 30:
-            renal_flag = True
-            dose_adj = renal_rule.get("dose_adjustment", {})
-            if dose_adj:
-                dose_adj_msg = f" Dose adjustment: eGFR 10-30 → {dose_adj.get('egfr_10_30','')}; eGFR <10 → {dose_adj.get('egfr_less_10','')}."
-        elif egfr is not None and egfr < 60:
-            renal_flag = True
-
-        comorbid_lower = [c.lower() for c in patient.get("comorbid", [])]
-        triggers = [t.lower() for t in renal_rule.get("trigger_values", [])]
-        if any(any(t in c for t in triggers) for c in comorbid_lower):
-            renal_flag = True
-
-        if patient.get("dialysis_status") not in (None, "None", ""):
-            renal_flag = True
-
-        if renal_flag:
-            add(renal_rule.get("severity","HIGH"), "Renal Impairment",
-                renal_rule.get("message","") + dose_adj_msg, "renal")
-
-    # Hepatic risk
-    hep_rule = w.get("hepatic_risk", {})
-    if hep_rule:
-        hep = patient.get("hepatic_impairment","None")
-        liver = patient.get("liver_disease_type","None")
-        triggers = [t.lower() for t in hep_rule.get("trigger_values",[])]
-        if hep not in ("None","") or liver not in ("None",""):
-            if any(t in (hep+liver).lower() for t in triggers):
-                add(hep_rule["severity"], "Hepatic Impairment",
-                    hep_rule["message"], "hepatic")
-
-    # Geriatric
-    ger_rule = w.get("geriatric", {})
-    if ger_rule:
-        age_thresh = ger_rule.get("age_threshold", 65)
-        if patient.get("age", 0) >= age_thresh:
-            add(ger_rule["severity"], "Geriatric Patient", ger_rule["message"], "geriatric")
-
-    # Alcohol
-    alc_rule = w.get("alcohol", {})
-    if alc_rule:
-        alc = patient.get("alcohol_use","None")
-        triggers = [t.lower() for t in alc_rule.get("trigger_values",[])]
-        if alc.lower() in triggers:
-            add(alc_rule["severity"], "Alcohol Use", alc_rule["message"], "alcohol")
-
-    # Smoking
-    smk_rule = w.get("smoking", {})
-    if smk_rule:
-        smk = patient.get("smoking_status","")
-        triggers = [t.lower() for t in smk_rule.get("trigger_values",[])]
-        if any(t in smk.lower() for t in triggers):
-            add(smk_rule["severity"], "Smoking", smk_rule["message"], "smoking")
-
-    # Dose check (Diclofenac)
-    dose_rule = w.get("dose_check", {})
-    if dose_rule:
-        prescribed = drug_data.get("dose_value", 0)
-        max_dose   = dose_rule.get("max_daily_oral_mg", 9999)
-        if prescribed > max_dose:
-            add(dose_rule["severity"], "Dose Alert",
-                f"Prescribed dose {prescribed}mg exceeds maximum recommended {max_dose}mg/day. "
-                + dose_rule.get("message",""), "dose_check")
-
-    # CDAD risk (Amoxicillin)
-    cdad_rule = w.get("cdad_risk", {})
-    if cdad_rule:
-        comorbid_lower = [c.lower() for c in patient.get("comorbid",[])]
-        hi_meds_lower  = [c.lower() for c in patient.get("high_risk_meds",[])]
-        triggers = [t.lower() for t in cdad_rule.get("trigger_values",[])]
-        all_f = comorbid_lower + hi_meds_lower
-        if any(any(t in f for t in triggers) for f in all_f):
-            add(cdad_rule["severity"], "CDAD Risk", cdad_rule["message"], "cdad")
-
-    # ── 3.5 GENERIC WARNINGS (from schema) ──────────────────────────────────
-    # Evaluate any other warnings automatically by checking flat patient text
-    patient_text = " ".join([str(v) for v in patient.values()]).lower()
-    for rule_name, rule_data in w.items():
-        if rule_name in ["pregnancy", "breastfeeding", "cv_risk", "gi_risk", "renal_risk", "hepatic_risk", "geriatric", "alcohol", "smoking", "dose_check", "cdad_risk"]:
-            continue
+    
+    # ── 1. BOX WARNING (always show) ─────────────────────────────────────────
+    box_warnings = drug_data.get("box_warnings", [])
+    for idx, bw in enumerate(box_warnings):
+        add("HIGH", f"⬛ Box Warning: {bw.get('type', '')}", bw.get("description", ""), f"BW-{idx}")
+        
+    # ── 2. DYNAMIC CDSS ALERT RULES ─────────────────────────────────────────
+    rules = drug_data.get("cdss_alert_rules", [])
+    
+    sev_map = {
+        "CONTRAINDICATION": "CONTRAINDICATED",
+        "ABSOLUTE": "CONTRAINDICATED",
+        "MAJOR_INTERACTION": "HIGH",
+        "WARNING": "HIGH",
+        "MODERATE_INTERACTION": "MODERATE",
+        "CAUTION": "MODERATE"
+    }
+    
+    for r in rules:
+        trigger_str = r.get("trigger", "")
+        if evaluate_trigger(trigger_str, env):
+            orig_sev = r.get("alert_type", "WARNING")
+            mapped_sev = sev_map.get(orig_sev, "MODERATE")
+            add(mapped_sev, f"Rule: {r.get('rule_id', '')}", r.get("message", ""), r.get("rule_id", ""))
             
-        triggers = [t.lower() for t in rule_data.get("trigger_values", [])]
-        if triggers and any(t in patient_text for t in triggers):
-            title = rule_data.get("title", rule_name.replace("_", " ").title())
-            add(rule_data.get("severity", "MODERATE"), title, rule_data.get("message", ""), rule_name)
-
-    # ── 4. Sort by severity order ─────────────────────────────────────────────
+    # ── 3. Sort by severity order ─────────────────────────────────────────────
     alerts.sort(key=lambda a: SEVERITY_ORDER.index(a["severity"])
                 if a["severity"] in SEVERITY_ORDER else 99)
 
-    # ── 5. If no alerts — add safe INFO ──────────────────────────────────────
+    # ── 4. If no alerts — add safe INFO ──────────────────────────────────────
     if not alerts:
         add("INFO", "No Alerts", f"No clinical warnings identified for {name} based on the provided patient profile.", "none")
 
@@ -291,95 +203,109 @@ def render_drug_cdss():
     available_drugs = get_available_drugs(cdss_data)
 
     # ── MAIN CONTENT: Patient Input Form ──────────────────────────────────────
-    with st.form("cdss_patient_form"):
-        st.markdown("### 👤 Patient Profile")
+    st.markdown("### 👤 Patient Profile")
 
-        # Row 1: Demographics
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            age    = st.number_input("Age (years)", 0, 120, 45, key="cdss_age")
-        with col2:
-            gender = st.selectbox("Gender", ["Male","Female","Other"], key="cdss_gender")
-        with col3:
-            weight = st.number_input("Weight (kg)", 1, 300, 65, key="cdss_weight")
+    # Row 1: Demographics
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        age    = st.number_input("Age (years)", 0, 120, 45, key="cdss_age")
+    with col2:
+        gender = st.selectbox("Gender", ["Male","Female","Other"], key="cdss_gender")
+    with col3:
+        weight = st.number_input("Weight (kg)", 1, 300, 65, key="cdss_weight")
 
-        # Row 2: Special Populations
-        st.markdown("**Special Populations**")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            pregnancy = st.selectbox("Pregnancy", ["No","Yes"], key="cdss_preg")
-        with col2:
-            preg_tri  = st.selectbox("Trimester (if pregnant)", ["NOT_APPLICABLE","first","second","third"], key="cdss_tri")
-        with col3:
-            breastfeeding = st.selectbox("Breastfeeding", ["No","Yes"], key="cdss_bf")
+    # Row 2: Special Populations
+    st.markdown("**Special Populations**")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        pregnancy = st.selectbox("Pregnancy", ["No","Yes"], key="cdss_preg")
+    with col2:
+        preg_tri  = st.selectbox("Trimester (if pregnant)", ["NOT_APPLICABLE","first","second","third"], key="cdss_tri")
+    with col3:
+        if pregnancy == "Yes":
+            gest_weeks = st.number_input("Gestational Age (weeks)", 1, 42, 20, key="cdss_gest")
+        else:
+            gest_weeks = None
+    with col4:
+        breastfeeding = st.selectbox("Breastfeeding", ["No","Yes"], key="cdss_bf")
 
-        # Row 3: Comorbidities & Risk Factors
-        st.markdown("**Comorbidities & Risk Factors**")
-        col1, col2 = st.columns(2)
-        with col1:
-            comorbid_opts = ["hypertension","heart_disease","MI","stroke","heart_failure",
-                             "diabetes","CKD","renal_disease","peptic_ulcer","GI_bleed",
-                             "IBD","cirrhosis","hepatitis","COPD","asthma","immunocompromised",
-                             "infectious_mononucleosis", "phenylketonuria", "lymphatic_leukaemia"]
-            comorbid = st.multiselect("Comorbid Conditions", comorbid_opts, key="cdss_comorbid")
+    # Row 3: Comorbidities & Risk Factors
+    st.markdown("**Comorbidities & Risk Factors**")
+    col1, col2 = st.columns(2)
+    with col1:
+        comorbid_opts = ["hypertension","heart_disease","MI","stroke","heart_failure",
+                         "diabetes","CKD","renal_disease","peptic_ulcer","GI_bleed",
+                         "IBD","cirrhosis","hepatitis","COPD","asthma","immunocompromised",
+                         "infectious_mononucleosis", "phenylketonuria", "Phenylketonuria (PKU)", "lymphatic_leukaemia"]
+        comorbid = st.multiselect("Comorbid Conditions", comorbid_opts, key="cdss_comorbid")
 
-            cv_opts  = ["MI","stroke","heart_failure","ischemic_heart_disease","CABG"]
-            cv_hist  = st.multiselect("CV History", cv_opts, key="cdss_cv")
-        with col2:
-            gi_opts  = ["peptic_ulcer","GI_bleed","gastritis","IBD"]
-            gi_risk  = st.multiselect("GI Risk Factors", gi_opts, key="cdss_gi")
+        cv_opts  = ["MI","stroke","heart_failure","ischemic_heart_disease","CABG"]
+        cv_hist  = st.multiselect("CV History", cv_opts, key="cdss_cv")
+    with col2:
+        gi_opts  = ["peptic_ulcer","GI_bleed","gastritis","IBD"]
+        gi_risk  = st.multiselect("GI Risk Factors", gi_opts, key="cdss_gi")
 
-            med_opts = ["anticoagulant","aspirin","steroid","SSRI","ACE_inhibitor",
-                        "antibiotic_recent","methotrexate"]
-            hi_meds  = st.multiselect("High Risk Co-medications", med_opts, key="cdss_meds")
+        med_opts = ["anticoagulant","aspirin","steroid","SSRI","ACE_inhibitor",
+                    "antibiotic_recent","methotrexate", "Warfarin"]
+        hi_meds  = st.multiselect("High Risk Co-medications", med_opts, key="cdss_meds")
 
-        # Row 4: Allergy, Hepatic, Lifestyle
-        st.markdown("**Allergy & Lifestyle**")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            allergy  = st.multiselect("Allergy History",
-                                      ["Diclofenac","NSAIDs","Aspirin","Penicillin",
-                                       "Amoxicillin","Cephalosporin","Carbapenem","Monobactam",
-                                       "Sulfa","Codeine"],
-                                      key="cdss_allergy")
-            hep_imp  = st.selectbox("Hepatic Impairment",
-                                    ["None","mild","moderate","severe"], key="cdss_hep")
-        with col2:
-            dialysis = st.selectbox("Dialysis Status",
-                                    ["None","haemodialysis","peritoneal"], key="cdss_dial")
-            smoking  = st.selectbox("Smoking Status",
-                                    ["Non-smoker","Smoker","Ex-smoker"], key="cdss_smoke")
-        with col3:
-            alcohol  = st.selectbox("Alcohol Use",
-                                    ["None","occasional","moderate","heavy"], key="cdss_alc")
+    # Row 4: Allergy, Hepatic, Lifestyle
+    st.markdown("**Allergy & Lifestyle**")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        allergy  = st.multiselect("Allergy History",
+                                  ["Diclofenac","NSAIDs","Aspirin","Penicillin",
+                                   "Amoxicillin","Cephalosporin","Carbapenem","Monobactam",
+                                   "Sulfa","Codeine"],
+                                  key="cdss_allergy")
+        hep_imp  = st.selectbox("Hepatic Impairment",
+                                ["None","mild","moderate","severe"], key="cdss_hep")
+    with col2:
+        dialysis = st.selectbox("Dialysis Status",
+                                ["None","haemodialysis","peritoneal"], key="cdss_dial")
+        smoking  = st.selectbox("Smoking Status",
+                                ["Non-smoker","Smoker","Ex-smoker"], key="cdss_smoke")
+    with col3:
+        alcohol  = st.selectbox("Alcohol Use",
+                                ["None","occasional","moderate","heavy"], key="cdss_alc")
 
-        # Row 5: Lab Values
-        st.markdown("### 🧪 Lab Values")
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            creatinine = st.number_input("Creatinine (mg/dL)", 0.0, 20.0, 0.0,
-                                         step=0.1, key="cdss_cr")
-        with col2:
-            egfr       = st.number_input("eGFR (mL/min)", 0.0, 200.0, 0.0,
-                                         step=1.0, key="cdss_egfr")
-        with col3:
-            alt        = st.number_input("ALT (U/L)", 0.0, 2000.0, 0.0,
-                                         step=1.0, key="cdss_alt")
-        with col4:
-            hemoglobin = st.number_input("Haemoglobin (g/dL)", 0.0, 25.0, 0.0,
-                                         step=0.1, key="cdss_hgb")
+    # Row 5: Lab Values
+    st.markdown("### 🧪 Lab Values")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        creatinine = st.number_input("Creatinine (mg/dL)", 0.0, 20.0, 0.0, step=0.1, key="cdss_cr")
+        potassium = st.number_input("Serum Potassium (mEq/L)", 0.0, 10.0, 0.0, step=0.1, key="cdss_k")
+    with col2:
+        egfr       = st.number_input("eGFR (mL/min)", 0.0, 200.0, 0.0, step=1.0, key="cdss_egfr")
+        inr        = st.number_input("INR / Prothrombin Time", 0.0, 10.0, 0.0, step=0.1, key="cdss_inr")
+    with col3:
+        alt        = st.number_input("ALT (U/L)", 0.0, 2000.0, 0.0, step=1.0, key="cdss_alt")
+        ast        = st.number_input("AST (U/L)", 0.0, 2000.0, 0.0, step=1.0, key="cdss_ast")
+    with col4:
+        hemoglobin = st.number_input("Haemoglobin (g/dL)", 0.0, 25.0, 0.0, step=0.1, key="cdss_hgb")
 
-        # Row 6: Drug Selection + Submit
-        st.markdown("### 💊 Drug Selection")
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            selected_drugs = st.multiselect("Select Drug(s) to Evaluate", available_drugs,
-                                            default=[available_drugs[0]] if available_drugs else [],
-                                            key="cdss_drugs")
-        with col2:
-            st.markdown("<br>", unsafe_allow_html=True)
+    # Row 6: Drug Selection
+    st.markdown("### 💊 Drug Selection")
+    selected_drugs = st.multiselect("Select Drug(s) to Evaluate", available_drugs,
+                                    default=[available_drugs[0]] if available_drugs else [],
+                                    key="cdss_drugs")
+    
+    drug_specifics = {}
+    if selected_drugs:
+        st.markdown("**Drug-Specific Details**")
+        for drug in selected_drugs:
+            st.markdown(f"*{drug}*")
+            d_col1, d_col2, d_col3 = st.columns(3)
+            with d_col1:
+                route = st.selectbox("Route of Administration", ["oral", "parenteral", "topical", "ophthalmic", "rectal"], key=f"cdss_route_{drug}")
+            with d_col2:
+                indication = st.text_input("Primary Indication", key=f"cdss_ind_{drug}")
+            with d_col3:
+                duration = st.number_input("Duration of therapy (days)", 1, 365, 7, key=f"cdss_dur_{drug}")
+            drug_specifics[drug] = {"route": route, "indication": indication, "duration": duration}
 
-        run_btn = st.form_submit_button("🔍 Evaluate Safety", type="primary", use_container_width=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    run_btn = st.button("🔍 Evaluate Safety", type="primary", use_container_width=True)
 
     # Fix trimester if pregnancy is No
     if pregnancy == "No":
@@ -398,7 +324,7 @@ def render_drug_cdss():
         patient = {
             "age": age, "gender": gender, "weight": weight,
             "age_group": "pediatric" if age < 18 else ("geriatric" if age >= 65 else "adult"),
-            "pregnancy": pregnancy, "pregnancy_trimester": preg_tri,
+            "pregnancy": pregnancy, "pregnancy_trimester": preg_tri, "gestational_weeks": gest_weeks,
             "breastfeeding": breastfeeding,
             "hepatic_impairment": hep_imp, "liver_disease_type": hep_imp,
             "smoking_status": smoking, "alcohol_use": alcohol,
@@ -411,6 +337,9 @@ def render_drug_cdss():
             "creatinine": creatinine if creatinine > 0 else None,
             "egfr":       egfr       if egfr       > 0 else None,
             "alt":        alt        if alt         > 0 else None,
+            "ast":        ast        if ast         > 0 else None,
+            "potassium":  potassium  if potassium   > 0 else None,
+            "inr":        inr        if inr         > 0 else None,
             "hemoglobin": hemoglobin if hemoglobin  > 0 else None,
         }
 
@@ -418,6 +347,13 @@ def render_drug_cdss():
         for drug_name in selected_drugs:
             drug_data = get_drug_data(cdss_data, drug_name)
             if drug_data:
+                # Merge specifics if available
+                specs = drug_specifics.get(drug_name, {})
+                drug_data["route"] = specs.get("route", drug_data.get("route", ""))
+                drug_data["indication"] = specs.get("indication", drug_data.get("indication", ""))
+                drug_data["duration_value"] = specs.get("duration", drug_data.get("duration_value", ""))
+                drug_data["duration_unit"] = "days"
+                
                 all_results[drug_name] = {
                     "alerts":    evaluate_drug(patient, labs, drug_data),
                     "drug_data": drug_data,

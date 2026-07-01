@@ -1,0 +1,57 @@
+{
+  "diagnoses": [],
+  "medications": [],
+  "allergies": [],
+  "procedures": [
+    "RE Cataract"
+  ],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [
+    "Provide patient health education",
+    "Provide patient comfortable position"
+  ],
+  "timeline_events": [
+    {
+      "date": "2023-05-28",
+      "event": "Case received from the OP"
+    },
+    {
+      "date": "2023-05-28",
+      "event": "RE Cataract"
+    },
+    {
+      "date": "2023-05-28",
+      "event": "Patient scoring done"
+    },
+    {
+      "date": "2023-05-28",
+      "event": "To provide patient health education"
+    },
+    {
+      "date": "2023-05-28",
+      "event": "Provide patient comfortable position"
+    },
+    {
+      "date": "2023-05-28",
+      "event": "Check the patient vitals & record"
+    },
+    {
+      "date": "2023-05-28",
+      "event": "BP: 100/70 Temp: 37.5"
+    },
+    {
+      "date": "2023-05-28",
+      "event": "SpO2: 98% PR: 72 bpm"
+    },
+    {
+      "date": "2023-05-28",
+      "event": "Treatment given to the patient"
+    },
+    {
+      "date": "2023-05-28",
+      "event": "Case handing over to the 'C' shift duty staff"
+    }
+  ],
+  "page_summary": "Nurses notes documenting the case receipt, cataract procedure, patient scoring, health education, vital checks, and treatment."
+}

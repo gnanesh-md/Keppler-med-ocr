@@ -1,0 +1,21 @@
+{
+  "diagnoses": [
+    "1",
+    "2",
+    "3",
+    "4"
+  ],
+  "medications": [],
+  "allergies": [],
+  "procedures": [],
+  "lab_results": [],
+  "admissions": [],
+  "recommendations": [],
+  "timeline_events": [
+    {
+      "date": "2015-05-13",
+      "event": "Patient shifted from op to opth"
+    }
+  ],
+  "page_summary": "Patient KONDU GOURAMMA was discharged after being shifted between OP and OPTH on May 13, 2015."
+}
