@@ -121,6 +121,7 @@ export interface OCRJobResult {
   pages: { label: string; text: string }[];
   entities: OCREntity[];
   confidence_score: number;
+  extraction_time: number | null;
 }
 
 export const ocrApi = {

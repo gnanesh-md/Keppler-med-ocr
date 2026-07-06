@@ -161,6 +161,9 @@ async def job_result(job_id: str, current_user: CurrentUser = Depends(get_curren
         if job.status != "COMPLETED":
             raise HTTPException(status_code=409, detail=f"Job is {job.status}, not completed yet.")
         result_doc_id = job.result_doc_id
+        extraction_time = None
+        if job.completed_at and job.created_at:
+            extraction_time = round((job.completed_at - job.created_at).total_seconds(), 2)
     finally:
         db.close()
 
@@ -174,6 +177,7 @@ async def job_result(job_id: str, current_user: CurrentUser = Depends(get_curren
         "pages": doc["metadata"].get("pages", []),
         "entities": doc["metadata"].get("predictions", []),
         "confidence_score": doc["confidence_score"],
+        "extraction_time": extraction_time,
     }
 
 

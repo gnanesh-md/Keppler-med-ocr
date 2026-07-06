@@ -805,6 +805,7 @@ const OCRWorkspace = ({
   const [blueprints, setBlueprints] = useState<string[]>([]);
   const [selectedBlueprint, setSelectedBlueprint] = useState("Universal OCR (Any Text)");
   const [jobs, setJobs] = useState<OcrJobEntry[]>([]);
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollTimers = useRef<Record<string, ReturnType<typeof setInterval>>>({});
@@ -835,10 +836,15 @@ const OCRWorkspace = ({
     }, 2500);
   };
 
-  const handleFiles = async (files: FileList | null) => {
+  const handleFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    setStagedFiles(Array.from(files));
+  };
+
+  const handleExtract = async () => {
+    if (stagedFiles.length === 0) return;
     setUploadError(null);
-    for (const file of Array.from(files)) {
+    for (const file of stagedFiles) {
       try {
         const res = await ocrApi.upload(file, selectedBlueprint);
         setJobs((prev) => [
@@ -851,6 +857,7 @@ const OCRWorkspace = ({
         setUploadError(e instanceof ApiError ? e.message : "Upload failed. Please try again.");
       }
     }
+    setStagedFiles([]);
   };
 
   const removeJob = (jobId: string) => {
@@ -887,21 +894,18 @@ const OCRWorkspace = ({
       <div className="flex-1 flex overflow-hidden">
         {/* Main area */}
         <div className="flex-1 p-5 overflow-y-auto space-y-5">
-          {/* Tabs */}
-          <div className="flex gap-1 border-b border-border pb-0">
-            {(["upload", "queue"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors capitalize ${
-                  tab === t
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
+          {/* Header row */}
+          <div className="flex items-end justify-end pb-0">
+            <div className="mb-2 mr-2 flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Template:</span>
+              <select
+                value={selectedBlueprint}
+                onChange={(e) => setSelectedBlueprint(e.target.value)}
+                className="text-xs font-medium text-foreground bg-card border border-border rounded-md px-2 py-1 outline-none cursor-pointer hover:bg-muted/50 transition-colors"
               >
-                {t === "queue" ? `Processing Queue (${jobs.length})` : "Upload Documents"}
-              </button>
-            ))}
+                {blueprints.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
           </div>
 
           {uploadError && (
@@ -910,54 +914,57 @@ const OCRWorkspace = ({
             </div>
           )}
 
-          {tab === "upload" ? (
-            <>
-              {/* Drop zone */}
-              <div
-                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={(e) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
-                onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl flex flex-col items-center justify-center py-20 transition-all cursor-pointer ${
-                  dragging
-                    ? "border-primary bg-secondary"
-                    : "border-switch-background bg-card hover:border-[#93C5FD] hover:bg-background"
-                }`}
+          {/* Drop zone */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
+            onClick={() => fileInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-xl flex items-center justify-between px-6 py-4 transition-all cursor-pointer ${
+              dragging
+                ? "border-primary bg-secondary"
+                : "border-switch-background bg-card hover:border-[#93C5FD] hover:bg-background"
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center flex-shrink-0">
+                <Upload className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {stagedFiles.length > 0 ? `${stagedFiles.length} file(s) ready for extraction` : "Drop medical documents here"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">PDF, PNG, JPEG — processed with {selectedBlueprint}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                className="bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium px-4 py-2 rounded-lg transition-colors border border-border"
               >
-                <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mb-5">
-                  <Upload className="w-7 h-7 text-primary" />
-                </div>
-                <p className="text-base font-medium text-foreground mb-1">Drop medical documents here</p>
-                <p className="text-sm text-muted-foreground mb-5">PDF, PNG, JPEG — processed with the {selectedBlueprint} template</p>
+                Browse files
+              </button>
+              {stagedFiles.length > 0 && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                  className="bg-primary hover:hover:bg-primary/90 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+                  onClick={(e) => { e.stopPropagation(); handleExtract(); }}
+                  className="bg-red-500 hover:bg-red-600 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5"
                 >
-                  Browse files
+                  <Cpu className="w-3.5 h-3.5" /> Extract OCR
                 </button>
-              </div>
+              )}
+            </div>
+          </div>
 
-              {/* Settings row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-card border border-border rounded-xl px-4 py-3">
-                  <div className="text-xs text-med-text-tertiary mb-1">Client Template</div>
-                  <select
-                    value={selectedBlueprint}
-                    onChange={(e) => setSelectedBlueprint(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-sm font-medium text-foreground bg-transparent outline-none w-full"
-                  >
-                    {blueprints.map((b) => <option key={b} value={b}>{b}</option>)}
-                  </select>
-                </div>
-                <div className="bg-card border border-border rounded-xl px-4 py-3">
-                  <div className="text-xs text-med-text-tertiary mb-1">Output Format</div>
-                  <div className="text-sm font-medium text-foreground">Structured Markdown + Entities</div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
+          {/* Active Job Visualizer */}
+          {jobs.length > 0 && (jobs[0].status === "PROCESSING" || jobs[0].status === "PENDING") && (
+            <OCRProgressViewer 
+              jobId={jobs[0].jobId} 
+              filename={jobs[0].filename} 
+              onDone={(id, name) => onViewResult(id, name)} 
+            />
+          )}
+
+          <div className="bg-card border border-border rounded-xl overflow-hidden mt-6">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border">
@@ -1013,7 +1020,6 @@ const OCRWorkspace = ({
                 </tbody>
               </table>
             </div>
-          )}
         </div>
       </div>
     </div>
@@ -1031,15 +1037,14 @@ const OCR_STEPS = [
   { label: "Finalizing report", desc: "Compiling markdown and archiving to vault", at: 100 },
 ];
 
-const OCRProcessing = ({
+
+const OCRProgressViewer = ({
   jobId,
   filename,
-  onNavigate,
   onDone,
 }: {
   jobId: string | null;
   filename: string | null;
-  onNavigate: (s: Screen) => void;
   onDone: (jobId: string, filename: string) => void;
 }) => {
   const [progress, setProgress] = useState(0);
@@ -1066,85 +1071,57 @@ const OCRProcessing = ({
     }, 500);
     return () => {
       cancelled = true;
-      clearInterval(interval); };
+      clearInterval(interval);
+    };
   }, [jobId]);
 
-  if (!jobId) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-background gap-4">
-        <p className="text-sm text-muted-foreground">No document is currently processing.</p>
-        <button onClick={() => onNavigate("ocr-workspace")} className="text-sm text-primary hover:underline">Go to OCR Workspace</button>
-      </div>
-    );
-  }
+  if (!jobId) return null;
 
   return (
-    <div className="flex-1 flex flex-col bg-background overflow-hidden">
-      <TopBar
-        title="OCR Processing"
-        subtitle={filename ?? undefined}
-        actions={
-          <button onClick={() => onNavigate("home")} className="text-xs text-muted-foreground border border-border px-3 py-1.5 rounded-lg hover:bg-muted transition-colors">
-            Continue working
-          </button>
-        }
-      />
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-xl">
-          <div className="bg-card border border-border rounded-2xl p-8">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center">
-                <Cpu className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-foreground">{error ? "Extraction failed" : "Processing document…"}</h2>
-                <p className="text-sm text-muted-foreground">{filename}</p>
-              </div>
-              <div className="ml-auto text-right">
-                <div className="text-2xl font-semibold text-primary">{Math.round(progress)}%</div>
-              </div>
-            </div>
-
-            {error ? (
-              <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{error}</div>
-            ) : (
-              <>
-                <ProgressBar value={progress} label="" />
-
-                <div className="mt-8 space-y-4">
-                  {OCR_STEPS.map((step, i) => {
-                    const done = progress >= step.at;
-                    const prevAt = i === 0 ? 0 : OCR_STEPS[i - 1].at;
-                    const active = !done && progress >= prevAt;
-                    return (
-                      <div key={step.label} className={`flex items-start gap-4 ${!done && !active ? "opacity-40" : ""}`}>
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                          done ? "bg-med-success" : active ? "bg-primary animate-pulse" : "bg-border"
-                        }`}>
-                          {done ? <Check className="w-3.5 h-3.5 text-white" /> : <span className="text-[10px] font-semibold text-white">{i + 1}</span>}
-                        </div>
-                        <div className="flex-1">
-                          <div className={`text-sm font-medium ${active ? "text-primary" : "text-foreground"}`}>{step.label}</div>
-                          <div className="text-xs text-med-text-tertiary">{step.desc}</div>
-                        </div>
-                        {done && <span className="text-[10px] text-med-success font-medium mt-1">Done</span>}
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            <div className="mt-8 pt-6 border-t border-border">
-              <button
-                onClick={() => onNavigate("home")}
-                className="w-full flex items-center justify-center gap-2 border border-border text-muted-foreground hover:bg-background text-sm font-medium py-2.5 rounded-lg transition-colors"
-              >
-                <Inbox className="w-4 h-4" /> Continue working in background
-              </button>
-            </div>
+    <div className="w-full max-w-xl mx-auto my-6">
+      <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center">
+            <Cpu className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">{error ? "Extraction failed" : "Processing document…"}</h2>
+            <p className="text-sm text-muted-foreground">{filename}</p>
+          </div>
+          <div className="ml-auto text-right">
+            <div className="text-2xl font-semibold text-primary">{Math.round(progress)}%</div>
           </div>
         </div>
+
+        {error ? (
+          <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{error}</div>
+        ) : (
+          <>
+            <ProgressBar value={progress} label="" />
+
+            <div className="mt-8 space-y-4">
+              {OCR_STEPS.map((step, i) => {
+                const done = progress >= step.at;
+                const prevAt = i === 0 ? 0 : OCR_STEPS[i - 1].at;
+                const active = !done && progress >= prevAt;
+                return (
+                  <div key={step.label} className={`flex items-start gap-4 ${!done && !active ? "opacity-40" : ""}`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                      done ? "bg-med-success" : active ? "bg-primary animate-pulse" : "bg-border"
+                    }`}>
+                      {done ? <Check className="w-3.5 h-3.5 text-white" /> : <span className="text-[10px] font-semibold text-white">{i + 1}</span>}
+                    </div>
+                    <div className="flex-1">
+                      <div className={`text-sm font-medium ${active ? "text-primary" : "text-foreground"}`}>{step.label}</div>
+                      <div className="text-xs text-med-text-tertiary">{step.desc}</div>
+                    </div>
+                    {done && <span className="text-[10px] text-med-success font-medium mt-1">Done</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -1365,7 +1342,12 @@ const OCRResult = ({ jobId, filename, onNavigate }: { jobId: string | null; file
               <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded flex items-center justify-center text-green-600 dark:text-green-400">
                 <Edit2 className="w-4 h-4" />
               </div>
-              <h2 className="text-sm font-semibold text-foreground">Extracted Output</h2>
+              <div className="flex flex-col">
+                <h2 className="text-sm font-semibold text-foreground">Extracted Output</h2>
+                {result?.extraction_time && (
+                  <div className="text-[10px] text-muted-foreground mt-0.5">Processed in {result.extraction_time}s</div>
+                )}
+              </div>
             </div>
             
             <div className="flex bg-muted p-1 rounded-lg flex-wrap">
@@ -2492,7 +2474,7 @@ function AppInner() {
   const startOcrJob = (jobId: string, filename: string) => {
     setActiveOcrJobId(jobId);
     setActiveOcrFilename(filename);
-    setScreen("ocr-processing");
+    // Do not navigate away; processing continues in the workspace queue
   };
   const viewOcrResult = (jobId: string, filename: string) => {
     setActiveOcrJobId(jobId);
@@ -2534,7 +2516,6 @@ function AppInner() {
       case "auth-welcome": return <AuthWelcome onNavigate={setScreen} />;
       case "home": return <WorkspaceHome onNavigate={setScreen} />;
       case "ocr-workspace": return <OCRWorkspace onStartJob={startOcrJob} onViewResult={viewOcrResult} />;
-      case "ocr-processing": return <OCRProcessing jobId={activeOcrJobId} filename={activeOcrFilename} onNavigate={setScreen} onDone={viewOcrResult} />;
       case "ocr-result": return <OCRResult jobId={activeOcrJobId} filename={activeOcrFilename} onNavigate={setScreen} />;
       case "pdf-summarizer": return <PDFSummarizer />;
       case "ai-assistant": return <AIAssistant />;
