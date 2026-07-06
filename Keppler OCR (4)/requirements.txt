@@ -4,10 +4,15 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Core Web Framework ──────────────────────────────────────────────────────
-streamlit>=1.35.0
+fastapi>=0.110.0                 # REST API gateway (api/)
+uvicorn>=0.29.0                  # ASGI server for the FastAPI gateway
+python-multipart>=0.0.9          # multipart/form-data parsing for file uploads (FastAPI)
+sqlalchemy>=2.0.0                # ORM for job-tracking DB (database/models.py)
+pydantic-settings>=2.0.0         # Settings management (core/config.py)
 
 # ── Authentication & Security ───────────────────────────────────────────────
 bcrypt>=4.0.0
+python-jose[cryptography]>=3.3.0 # JWT encode/decode (core/security.py)
 
 # ── Environment Config ──────────────────────────────────────────────────────
 python-dotenv>=1.0.0
@@ -17,7 +22,6 @@ google-generativeai>=0.7.0       # Google Gemini API (optional, future use)
 litellm>=1.40.0                  # LiteLLM unified LLM interface (rag_chatbot.py)
 openai>=1.0.0                    # Local vLLM Python client (precision_ocr.py, rag_chatbot.py)
 lightrag-hku>=1.0.0              # LightRAG knowledge graph engine (rag_chatbot.py)
-nest-asyncio>=1.6.0              # Async loop patching for Streamlit compatibility
 
 # ── Machine Learning ─────────────────────────────────────────────────────────
 scikit-learn>=1.4.0              # TF-IDF, cosine_similarity (unified_resolver.py, train scripts)

@@ -39,11 +39,11 @@ class AsyncRegionOCR:
         for strategy_name, strategy_fn in STRATEGIES:
             try:
                 # High resolution image processing for accurate OCR
-                max_dim = 1280
+                max_dim = 800
                 w, h = raw_img.size
                 if max(w, h) > max_dim:
                     scale = max_dim / max(w, h)
-                    raw_img = raw_img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+                    raw_img = raw_img.resize((int(w * scale), int(h * scale)), Image.BILINEAR)
                     
                 processed = strategy_fn(raw_img)
                 image_bytes = img_to_bytes(processed)

@@ -94,7 +94,7 @@ def verify_login(username, plain_password):
     return False, None
 
 def archive_document(user_id, filename, category, markdown, confidence, metadata={}):
-    """SaaS Feature: Saves OCR/RAG results permanently to the Vault."""
+    """SaaS Feature: Saves OCR/RAG results permanently to the Vault. Returns the new row id."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('''
@@ -102,7 +102,36 @@ def archive_document(user_id, filename, category, markdown, confidence, metadata
         VALUES (?, ?, ?, ?, ?, ?)
     ''', (user_id, filename, category, markdown, confidence, json.dumps(metadata)))
     conn.commit()
+    new_id = cursor.lastrowid
     conn.close()
+    return new_id
+
+
+def get_document_full(doc_id, user_id):
+    """Retrieves the full archived record (markdown + parsed metadata) for the API's job-result endpoints."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT filename, doc_category, raw_markdown, json_metadata, confidence_score, extraction_date
+        FROM universal_docs WHERE id = ? AND user_id = ?
+    """, (doc_id, user_id))
+    result = cursor.fetchone()
+    conn.close()
+    if not result:
+        return None
+    filename, category, markdown, metadata_json, confidence, extraction_date = result
+    try:
+        metadata = json.loads(metadata_json) if metadata_json else {}
+    except (TypeError, ValueError):
+        metadata = {}
+    return {
+        "filename": filename,
+        "doc_category": category,
+        "markdown": markdown,
+        "metadata": metadata,
+        "confidence_score": confidence,
+        "extraction_date": extraction_date,
+    }
 
 def get_user_vault(user_id):
     conn = get_connection()

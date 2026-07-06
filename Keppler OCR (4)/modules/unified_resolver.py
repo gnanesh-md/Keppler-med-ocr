@@ -89,6 +89,20 @@ def is_medical_candidate(text: str) -> bool:
         return True
     if len(t) < 2:
         return False
+        
+    # Exclude demographic and metadata fields
+    lower_t = t.lower()
+    exclude_prefixes = (
+        'name', 'patient name', 'age', 'sex', 'gender', 'address', 'date', 
+        'time', 'dob', 'dr.', 'dr ', 'doctor', 'ph:', 'phone:', 'email', 
+        'mobile', 'mr.', 'mrs.', 'ms.', 'patient:', 'referred by', 'hospital'
+    )
+    if any(lower_t.startswith(prefix) for prefix in exclude_prefixes):
+        return False
+        
+    # Also exclude patterns that look like pure dates (e.g., DD/MM/YYYY)
+    if re.match(r'^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}', t):
+        return False
     if re.match(r'^\d{1,2}\s*(am|pm)$', t, re.I):
         return False
     if re.match(r'^\d{1,2}:\d{2}', t):
@@ -148,7 +162,8 @@ def resolve_entities_in_text(text: str):
             annotated_lines.append('|'.join(new_cells))
         else:
             c_str = line.strip()
-            clean_str = re.sub(r'^[\-\*\•\d\.]+\s*', '', c_str)
+            clean_str = re.sub(r'^[\-\*\•]\s+', '', c_str)
+            clean_str = re.sub(r'^\d+\.\s+', '', clean_str)
             if is_medical_candidate(clean_str):
                 labels, scores = get_prediction(clean_str)
                 if labels and scores[0] > 0.55:

@@ -86,6 +86,8 @@ class RegionOCREngine:
             
             # Re-integrate skipped regions
             completed_regions.extend(skipped_regions)
+            # Re-sort regions by reading_order to maintain original spatial structure
+            completed_regions.sort(key=lambda r: r.reading_order)
             return completed_regions
 
     def process_regions(self, image: Image.Image, regions: List[RegionPrediction]) -> List[RegionPrediction]:

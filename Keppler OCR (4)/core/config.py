@@ -19,12 +19,16 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./keppler_platform.db")
-    
+
     # File Storage
     UPLOAD_DIR: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
 
+    # Auth
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "dev-only-insecure-secret-change-me")
+
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 # Initialize global singleton
 settings = Settings()

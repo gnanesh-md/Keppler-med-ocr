@@ -11,7 +11,6 @@ class HierarchicalSummarizer:
     """
     def __init__(self, model_name: str = "qwen2.5-vl-7b", base_url: str = "http://localhost:8700/v1"):
         self.model_name = model_name
-        # Using synchronous client since this is run in a standard Streamlit thread with sequential progress
         self.client = OpenAI(base_url=base_url, api_key="EMPTY")
         
     def _extract_chunk_data(self, chunk_text: str) -> dict:
@@ -47,17 +46,13 @@ class HierarchicalSummarizer:
         Merges results into a master structured dictionary.
         """
         import concurrent.futures
-        from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
 
         chunks = chunker.get_chunks()
         total = len(chunks)
-        ctx = get_script_run_ctx()
-        
+
         master_data = {}
-        
-        def _process_single_chunk(i, chunk_text, ctx):
-            if ctx:
-                add_script_run_ctx(ctx=ctx)
+
+        def _process_single_chunk(i, chunk_text):
             data = chunker.load_cached_chunk(i)
             if not data:
                 data = self._extract_chunk_data(chunk_text)
@@ -66,11 +61,11 @@ class HierarchicalSummarizer:
 
         results = [None] * total
         completed = 0
-        
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             futures = {}
             for i, chunk_text in enumerate(chunks):
-                future = executor.submit(_process_single_chunk, i, chunk_text, ctx)
+                future = executor.submit(_process_single_chunk, i, chunk_text)
                 futures[future] = i
                 
             for future in concurrent.futures.as_completed(futures):

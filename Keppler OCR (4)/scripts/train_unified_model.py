@@ -76,10 +76,36 @@ def main():
                 "ADMIN_TIMING": admin, "EXAMPLE": example
             }
             
+            # Base text
             text = f"{freq} {meaning} {admin}".strip()
             if text:
                 X_raw.append(text)
                 Y_label.append(key)
+                X_raw.append(freq)
+                Y_label.append(key)
+                
+            # Synthesize variations to handle noisy OCR/user input
+            if freq:
+                variants = set()
+                if '-' in freq and re.search(r'\d', freq):
+                    variants.add(freq.replace('-', ' - '))
+                    variants.add(freq.replace('-', ' '))
+                    variants.add(freq.replace('-', '–')) # en dash
+                
+                # Add common suffixes
+                temp_variants = list(variants) + [freq]
+                for v in temp_variants:
+                    variants.add(f"{v} x 5 days")
+                    variants.add(f"{v} x5 days")
+                    variants.add(f"{v} for 5 days")
+                    variants.add(f"take {v}")
+                    variants.add(f"{v} after meals")
+                
+                for v in variants:
+                    X_raw.append(v)
+                    Y_label.append(key)
+                    X_raw.append(f"{v} {meaning} {admin}".strip())
+                    Y_label.append(key)
                         
     print("Loading TenetServices.xlsx...")
     tenet_xls = pd.ExcelFile(TENET_FILE)

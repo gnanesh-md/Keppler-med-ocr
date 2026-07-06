@@ -13,10 +13,11 @@ __pycache__/
 database/ai_portal.db
 database/ocr_debug.log
 database/rag_workspace_*/
+keppler_platform.db
 
 # Temp files
 temp_uploads/
-streamlit.log
+uploads/
 
 # Environment secrets
 .env

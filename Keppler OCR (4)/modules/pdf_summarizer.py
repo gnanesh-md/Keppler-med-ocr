@@ -5,7 +5,6 @@ sends each page through the vision model (qwen2.5vl:32b),
 builds a structured clinical summary, and exports it as a
 professionally styled 4-5 page PDF, DOCX, or Markdown file.
 """
-import streamlit as st
 import fitz                          # PyMuPDF
 from openai import OpenAI
 import base64
@@ -20,13 +19,12 @@ from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import concurrent.futures
-from streamlit.runtime.scriptrunner import add_script_run_ctx
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 OCR_MODEL     = "qwen2.5-vl-7b"   # vision model for reading scanned pages
 SUMMARY_MODEL = "qwen2.5-vl-7b"   # text model for summarising
-MAX_IMG_DIM   = 1024              # High resolution image extraction
+MAX_IMG_DIM   = 512              # Reduced resolution for faster extraction
 JPEG_QUALITY  = 75
 
 client = OpenAI(base_url="http://localhost:8700/v1", api_key="EMPTY")
@@ -36,13 +34,13 @@ client = OpenAI(base_url="http://localhost:8700/v1", api_key="EMPTY")
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _page_to_image_bytes(page: fitz.Page) -> bytes:
-    mat = fitz.Matrix(2.0, 2.0)           # 2x zoom = ~150 DPI effective
+    mat = fitz.Matrix(1.5, 1.5)           # 1.5x zoom = ~108 DPI effective
     pix = page.get_pixmap(matrix=mat, colorspace=fitz.csRGB)
     img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
     w, h = img.size
     if max(w, h) > MAX_IMG_DIM:
         scale = MAX_IMG_DIM / max(w, h)
-        img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+        img = img.resize((int(w * scale), int(h * scale)), Image.BILINEAR)
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=JPEG_QUALITY)
     return buf.getvalue()
@@ -171,7 +169,7 @@ strong { color: #1a5276; }
 """
 
 
-def _md_to_html(summary_md: str, patient_name: str, ip_no: str) -> str:
+def _md_to_html(summary_md: str, patient_name: str, ip_no: str, doctor: str, nurse: str) -> str:
     safe = re.sub(r'<\|.*?\|>', '', summary_md)
     body_html = md_lib.markdown(safe, extensions=['tables', 'nl2br'])
 
@@ -182,7 +180,7 @@ def _md_to_html(summary_md: str, patient_name: str, ip_no: str) -> str:
         <div class="meta-box">
             PATIENT CASE SUMMARY<br/>
             <span style="font-size:13px">{patient_name}</span><br/>
-            IP No: {ip_no}
+            IP No: {ip_no} &nbsp;|&nbsp; Doctor: {doctor} &nbsp;|&nbsp; Nurse: {nurse}
         </div>
         <p style="font-size:9px;color:#888;margin-top:12px">
             Generated on {time.strftime('%d %B %Y at %I:%M %p')} &nbsp;|&nbsp; Confidential — For Medical Records Only
@@ -208,9 +206,9 @@ def _md_to_html(summary_md: str, patient_name: str, ip_no: str) -> str:
 </body></html>"""
 
 
-def generate_summary_pdf(summary_md: str, patient_name: str, ip_no: str) -> bytes | str:
+def generate_summary_pdf(summary_md: str, patient_name: str, ip_no: str, doctor: str, nurse: str) -> bytes | str:
     try:
-        html = _md_to_html(summary_md, patient_name, ip_no)
+        html = _md_to_html(summary_md, patient_name, ip_no, doctor, nurse)
         out = io.BytesIO()
         status = pisa.CreatePDF(io.StringIO(html), dest=out, encoding="utf-8")
         return out.getvalue() if not status.err else f"PDF Error: {status.err}"
@@ -222,7 +220,7 @@ def generate_summary_pdf(summary_md: str, patient_name: str, ip_no: str) -> byte
 # STEP 4 — Export to DOCX (styled Word document)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def generate_summary_docx(summary_md: str, patient_name: str, ip_no: str) -> bytes | str:
+def generate_summary_docx(summary_md: str, patient_name: str, ip_no: str, doctor: str, nurse: str) -> bytes | str:
     try:
         doc = Document()
 
@@ -246,6 +244,10 @@ def generate_summary_docx(summary_md: str, patient_name: str, ip_no: str) -> byt
         info = doc.add_paragraph(f"Patient: {patient_name}   |   IP No: {ip_no}")
         info.alignment = WD_ALIGN_PARAGRAPH.CENTER
         info.runs[0].font.size = Pt(10)
+
+        staff = doc.add_paragraph(f"Doctor: {doctor}   |   Nurse: {nurse}")
+        staff.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        staff.runs[0].font.size = Pt(9)
 
         date_p = doc.add_paragraph(
             f"Generated: {time.strftime('%d %B %Y at %I:%M %p')} | Confidential"
@@ -345,71 +347,39 @@ def generate_summary_docx(summary_md: str, patient_name: str, ip_no: str) -> byt
 # MAIN STREAMLIT UI
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _extract_patient_meta(summary_md: str) -> tuple[str, str]:
-    """Try to pull patient name and IP number from the summary text."""
+def _extract_patient_meta(summary_md: str) -> tuple[str, str, str, str]:
+    """Try to pull patient name, IP number, doctor, and nurse from the summary text."""
     name = "Patient"
     ip   = "—"
+    doctor = "—"
+    nurse = "—"
     name_m = re.search(r'(?:name|patient)[:\s*_]+([A-Z][A-Z\s]+)', summary_md, re.I)
     ip_m   = re.search(r'IP\s*(?:No|Number)?[:\s._]+([A-Z0-9]+)', summary_md, re.I)
+    doc_m  = re.search(r'(?:Treating Doctor|Consultant)[:\s*_]+([A-Z][A-Za-z\s.]+)', summary_md, re.I)
+    nurse_m= re.search(r'(?:Treating Nurse|Staff)[:\s*_]+([A-Z][A-Za-z\s.]+)', summary_md, re.I)
     if name_m:
         name = name_m.group(1).strip().title()
     if ip_m:
         ip = ip_m.group(1).strip()
-    return name, ip
+    if doc_m:
+        doctor = doc_m.group(1).strip().title()
+    if nurse_m:
+        nurse = nurse_m.group(1).strip().title()
+    return name, ip, doctor, nurse
 
 
-def render_pdf_summarizer():
-    st.header("📋 Medical Case File Summarizer")
-    st.caption("Upload a hospital case file PDF → Get a structured 4–5 page clinical summary → Download as PDF / Word / Markdown")
+def run_summary_pipeline(pdf_bytes: bytes, filename: str = "document.pdf", progress_cb=None, clear_cache: bool = False) -> dict:
+    """
+    Streamlit-free pipeline: OCR each page of a case-file PDF concurrently, then
+    map-reduce summarize into a structured clinical report.
 
-    # ── Sidebar ──────────────────────────────────────────────────────────────
-    with st.sidebar:
-        st.markdown("### 📤 Upload Case File")
-        uploaded = st.file_uploader(
-            "Upload PDF (up to 50 pages)",
-            type=["pdf"],
-            key="case_summary_uploader"
-        )
-        st.divider()
-        st.markdown("**⚙️ Settings**")
-        show_raw = st.toggle("Show raw OCR text per page", value=False)
-        clear_cache = st.toggle("Force fresh restart (clear cache)", value=False)
-        st.caption("Model: qwen2.5vl:32b (OCR) + qwen2.5:7b (Summary)")
-        st.divider()
-        run_btn = st.button("🚀 Generate Summary", type="primary", width="stretch",
-                            disabled=(uploaded is None))
+    progress_cb, if given, is called with a float in [0, 1] — 0.0-0.5 covers
+    per-page OCR, 0.5-1.0 covers chunk summarization.
 
-    # ── Previous result (show without re-running) ─────────────────────────
-    if "case_summary_md" in st.session_state and not run_btn:
-        _render_results(
-            st.session_state["case_summary_md"],
-            st.session_state["case_summary_pages"],
-            st.session_state["case_summary_filename"],
-            show_raw
-        )
-        return
-
-    if not uploaded:
-        st.info("👈 Upload a hospital case file PDF from the sidebar to get started.")
-        _show_sample_note()
-        return
-
-    if not run_btn:
-        st.info("👈 Click **Generate Summary** in the sidebar to begin.")
-        return
-
-    # ── PIPELINE ──────────────────────────────────────────────────────────────
-    pdf_bytes = uploaded.read()
-
-    # Step 1: Open PDF and count pages
+    Returns {"summary_md": str, "page_texts": dict[int, str], "patient_meta": (name, ip, doctor, nurse)}.
+    """
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     total_pages = len(doc)
-    st.success(f"✅ Loaded **{total_pages} pages** from `{uploaded.name}`")
-
-    # Step 2: OCR each page
-    st.markdown("### 🔍 Step 1 — Reading each page...")
-    page_texts = {}
-    ocr_progress = st.progress(0, text="Starting OCR...")
 
     images_to_process = {}
     for i in range(total_pages):
@@ -417,181 +387,50 @@ def render_pdf_summarizer():
         images_to_process[i + 1] = _page_to_image_bytes(page)
     doc.close()
 
+    page_texts = {}
     completed = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {}
-        for pg_num, img_bytes in images_to_process.items():
-            future = executor.submit(extract_page_text, img_bytes, pg_num)
-            futures[future] = pg_num
-
+        futures = {
+            executor.submit(extract_page_text, img_bytes, pg_num): pg_num
+            for pg_num, img_bytes in images_to_process.items()
+        }
         for future in concurrent.futures.as_completed(futures):
             pg_num = futures[future]
-            text = future.result()
-            page_texts[pg_num] = text
+            page_texts[pg_num] = future.result()
             completed += 1
-            ocr_progress.progress(
-                completed / total_pages,
-                text=f"📖 Reading pages concurrently... ({completed}/{total_pages})"
-            )
+            if progress_cb:
+                progress_cb(0.5 * completed / total_pages)
 
-    ocr_progress.progress(1.0, text="✅ All pages read!")
-    time.sleep(0.3)
-    ocr_progress.empty()
-
-    # Step 3: Map-Reduce Enterprise Summarization
-    st.markdown("### 🧠 Step 2 — Building Enterprise Structured Summary...")
-    
     page_strings = [page_texts[pg] for pg in sorted(page_texts.keys())]
-    
+
     from modules.summarizer.chunker import TextChunker
     from modules.summarizer.hierarchical import HierarchicalSummarizer
     from modules.summarizer.aggregator import MasterAggregator
-    
-    chunker = TextChunker(pages=page_strings, chunk_size=1, document_id=uploaded.name)
-    
+
+    chunker = TextChunker(pages=page_strings, chunk_size=1, document_id=filename)
     if clear_cache:
         chunker.clear_cache()
-        
+
     hierarchical = HierarchicalSummarizer(model_name=SUMMARY_MODEL)
-    
-    sum_progress = st.progress(0, text="Summarizing chunks (Map-Reduce)...")
-    
-    def update_progress(current, total):
-        sum_progress.progress(current / total, text=f"Summarizing chunk {current} of {total}...")
-        
-    master_data = hierarchical.process_chunks(chunker, progress_callback=update_progress)
-    sum_progress.progress(1.0, text="✅ All chunks summarized!")
-    time.sleep(0.3)
-    sum_progress.empty()
-    
-    with st.spinner("Generating Overall Clinical Narrative..."):
-        overall_summary = hierarchical.generate_overall_summary(master_data.get("page_summaries", []))
-        master_data["overall_summary"] = overall_summary
-    
-    with st.spinner("Aggregating Master Clinical Summary..."):
-        summary_md = MasterAggregator.build_markdown_report(master_data)
 
-    # Cache in session state
-    st.session_state["case_summary_md"]       = summary_md
-    st.session_state["case_summary_pages"]    = page_texts
-    st.session_state["case_summary_filename"] = uploaded.name
+    def _update_progress(current, total):
+        if progress_cb:
+            progress_cb(0.5 + 0.4 * current / total)
 
-    st.success("✅ Summary generated!")
-    _render_results(summary_md, page_texts, uploaded.name, show_raw)
+    master_data = hierarchical.process_chunks(chunker, progress_callback=_update_progress)
 
+    overall_summary = hierarchical.generate_overall_summary(master_data.get("page_summaries", []))
+    master_data["overall_summary"] = overall_summary
 
-def _render_results(summary_md: str, page_texts: dict, filename: str, show_raw: bool):
-    patient_name, ip_no = _extract_patient_meta(summary_md)
+    summary_md = MasterAggregator.build_markdown_report(master_data)
 
-    # ── SUMMARY DISPLAY ───────────────────────────────────────────────────────
-    st.divider()
-    col_title, col_badge = st.columns([3, 1])
-    with col_title:
-        st.markdown(f"## 🏥 Case Summary — {patient_name}")
-    with col_badge:
-        st.markdown(f"**IP No:** `{ip_no}`")
+    if progress_cb:
+        progress_cb(1.0)
 
-    # Split summary into sections for dropdowns
-    sections = re.split(r'\n(## \d+\. .+)', summary_md)
+    patient_meta = _extract_patient_meta(summary_md)
 
-    if len(sections) <= 1:
-        # Fallback: show full summary
-        st.markdown(summary_md)
-    else:
-        # Show section 1 (patient ID) expanded, rest as dropdowns
-        full_sections = []
-        i = 1
-        while i < len(sections) - 1:
-            title = sections[i].strip()
-            body  = sections[i + 1].strip() if (i + 1) < len(sections) else ""
-            full_sections.append((title, body))
-            i += 2
-
-        # Always show overall summary at top (last section)
-        for title, body in full_sections:
-            if "OVERALL" in title.upper() or "CLINICAL SUMMARY" in title.upper():
-                st.info(body)
-                break
-
-        st.divider()
-        st.markdown("### 📂 Detailed Sections")
-
-        for title, body in full_sections:
-            # First section (Patient ID) expanded by default
-            expanded = ("PATIENT IDENTIFICATION" in title.upper() or
-                        "DIAGNOSIS" in title.upper())
-            with st.expander(title, expanded=expanded):
-                st.markdown(body)
-
-    # ── RAW OCR PER PAGE ─────────────────────────────────────────────────────
-    if show_raw:
-        st.divider()
-        st.markdown("### 📄 Raw OCR Text Per Page")
-        for pg, txt in page_texts.items():
-            with st.expander(f"Page {pg}", expanded=False):
-                st.text(txt)
-
-    # ── DOWNLOAD BUTTONS ─────────────────────────────────────────────────────
-    st.divider()
-    st.markdown("### 💾 Download Summary")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        with st.spinner("Building PDF..."):
-            pdf_bytes = generate_summary_pdf(summary_md, patient_name, ip_no)
-        if isinstance(pdf_bytes, bytes):
-            st.download_button(
-                label="📥 Download PDF",
-                data=pdf_bytes,
-                file_name=f"CaseSummary_{ip_no}.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-            )
-        else:
-            st.error(pdf_bytes)
-
-    with col2:
-        with st.spinner("Building Word doc..."):
-            docx_bytes = generate_summary_docx(summary_md, patient_name, ip_no)
-        if isinstance(docx_bytes, bytes):
-            st.download_button(
-                label="📥 Download Word",
-                data=docx_bytes,
-                file_name=f"CaseSummary_{ip_no}.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                use_container_width=True,
-            )
-        else:
-            st.error(docx_bytes)
-
-    with col3:
-        st.download_button(
-            label="📥 Download Markdown",
-            data=summary_md,
-            file_name=f"CaseSummary_{ip_no}.md",
-            mime="text/markdown",
-            use_container_width=True,
-        )
-
-    st.caption("⚠️ Auto-generated summary — verify all clinical data against original records before use.")
-
-
-def _show_sample_note():
-    with st.expander("ℹ️ What sections does the summary include?", expanded=False):
-        st.markdown("""
-The summary covers **12 structured sections** across 4–5 pages:
-
-1. **Patient Identification** — Name, Age, IP No, UMR, Ward, Doctor, Admission Date
-2. **Diagnosis & Procedure** — Surgery, IOL power, Pre-op vitals
-3. **Admission Vitals** — Temp, Pulse, RR, BP, SpO2, Ht, Wt (table)
-4. **Risk Assessments** — Braden, Morse Fall, MEWS, Pain, Acuity scores
-5. **Nursing Assessment** — Mobility, ADL, allergies, nutrition, skin
-6. **Nursing Care Plan** — Diagnosis → Intervention → Rationale → Evaluation
-7. **Treatment Chart** — All drugs, doses, routes, frequencies (table)
-8. **Investigations** — Lab tests, dates, results (table)
-9. **Nurses Notes Timeline** — Date/Time/Shift/Entry (table)
-10. **Patient Movement & Handover** — ISBAR summary, safety checks
-11. **Patient Education** — Topics covered, nurse, date
-12. **Overall Clinical Summary** — Full admission narrative (5–8 sentences)
-        """)
+    return {
+        "summary_md": summary_md,
+        "page_texts": page_texts,
+        "patient_meta": patient_meta,
+    }

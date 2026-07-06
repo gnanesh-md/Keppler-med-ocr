@@ -1,74 +1,47 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from core.config import settings
-from core.schemas import DocumentUploadResponse, JobStatusResponse
-from database.models import SessionLocal, Document, ExtractionJob
-import hashlib
-import uuid
 import os
 
-# Initialize FastAPI application
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+from core.config import settings
+from database.db_utils import initialize_extended_schema
+from api.routers import assistant, auth, dashboard, ocr, summarizer, vault
+
 app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION)
 
-@app.post("/api/v1/document/upload", response_model=DocumentUploadResponse)
-async def upload_document(file: UploadFile = File(...)):
-    """
-    Intake Layer:
-    Receives document, computes MD5 hash to prevent duplicate processing,
-    and dispatches an asynchronous job to the Celery queue.
-    """
-    contents = await file.read()
-    doc_hash = hashlib.md5(contents).hexdigest()
-    
-    # Securely save file to local staging area
-    file_path = os.path.join(settings.UPLOAD_DIR, f"{doc_hash}_{file.filename}")
-    if not os.path.exists(file_path):
-        with open(file_path, "wb") as f:
-            f.write(contents)
-            
-    db = SessionLocal()
-    try:
-        # Prevent redundant database entries for duplicate files
-        doc = db.query(Document).filter(Document.id == doc_hash).first()
-        if not doc:
-            doc = Document(id=doc_hash, filename=file.filename, upload_path=file_path)
-            db.add(doc)
-            db.commit()
-            
-        # Create a unique tracking ID for this extraction attempt
-        job_id = str(uuid.uuid4())
-        job = ExtractionJob(job_id=job_id, document_id=doc.id)
-        db.add(job)
-        db.commit()
-        
-        # DISPATCH TO CELERY WORKER
-        # from workers.celery_app import process_document_task
-        # process_document_task.delay(job_id, file_path)
-        
-        return DocumentUploadResponse(
-            document_hash=doc_hash,
-            job_id=job_id,
-            message="Document accepted and queued for asynchronous extraction."
-        )
-    finally:
-        db.close()
 
-@app.get("/api/v1/job/{job_id}", response_model=JobStatusResponse)
-async def get_job_status(job_id: str):
-    """
-    Status endpoint for the UI to poll instead of blocking execution.
-    """
-    db = SessionLocal()
-    try:
-        job = db.query(ExtractionJob).filter(ExtractionJob.job_id == job_id).first()
-        if not job:
-            raise HTTPException(status_code=404, detail="Job not found")
-            
-        return JobStatusResponse(
-            job_id=job.job_id,
-            document_hash=job.document_id,
-            status=job.status,
-            progress=job.progress,
-            message=f"Job is currently {job.status}"
-        )
-    finally:
-        db.close()
+@app.on_event("startup")
+async def on_startup():
+    # Ensures the users/chat_history/universal_docs tables exist.
+    initialize_extended_schema()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(auth.router)
+app.include_router(ocr.router)
+app.include_router(summarizer.router)
+app.include_router(vault.router)
+app.include_router(assistant.router)
+app.include_router(dashboard.router)
+
+
+@app.get("/api/v1/health")
+async def health():
+    return {"status": "ok", "app": settings.APP_NAME, "version": settings.APP_VERSION}
+
+
+# Serve the built React frontend (Frontend OCR/dist) if present — e.g. in the
+# Docker image, where it's built in a separate stage. In local dev, run the
+# Vite dev server separately instead (npm run dev); this mount is skipped.
+_FRONTEND_DIST = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "Frontend OCR", "dist"
+)
+if os.path.isdir(_FRONTEND_DIST):
+    app.mount("/", StaticFiles(directory=_FRONTEND_DIST, html=True), name="frontend")

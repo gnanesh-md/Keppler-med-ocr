@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 class RegionPrediction(BaseModel):
     """Data contract for an extracted region from the document."""
@@ -36,3 +36,104 @@ class ExtractionResult(BaseModel):
     job_id: str
     document_hash: str
     regions: List[RegionPrediction]
+
+
+# ─── Auth ─────────────────────────────────────────────────────────────────
+
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user_id: int
+    username: str
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
+# ─── Drug CDSS ────────────────────────────────────────────────────────────
+
+class CDSSDrugRequest(BaseModel):
+    name: str
+    route: Optional[str] = None
+    indication: Optional[str] = None
+    duration: Optional[str] = None
+
+
+class CDSSEvaluateRequest(BaseModel):
+    patient: Dict[str, Any]
+    labs: Dict[str, Any]
+    drugs: List[CDSSDrugRequest]
+
+
+class CDSSAlert(BaseModel):
+    drug: str
+    severity: str
+    message: str
+    recommendation: Optional[str] = None
+
+
+class CDSSEvaluateResponse(BaseModel):
+    alerts: List[Dict[str, Any]]
+
+
+# ─── Vault ────────────────────────────────────────────────────────────────
+
+class VaultDocSummary(BaseModel):
+    id: int
+    filename: str
+    doc_category: Optional[str] = None
+    confidence_score: Optional[float] = None
+    extraction_date: Optional[str] = None
+
+
+class VaultDocDetail(BaseModel):
+    id: int
+    markdown: str
+
+
+# ─── Dashboard ────────────────────────────────────────────────────────────
+
+class ActiveJobSummary(BaseModel):
+    job_id: str
+    job_type: str
+    status: str
+    progress: float
+    filename: Optional[str] = None
+
+
+class DashboardSummary(BaseModel):
+    vault_document_count: int
+    active_jobs: List[ActiveJobSummary]
+    recent_documents: List[VaultDocSummary]
+
+
+# ─── AI Assistant (RAG chat) ───────────────────────────────────────────────
+
+class ChatRequest(BaseModel):
+    message: str
+    session_id: str = "default"
+    target_language: str = "English"
+
+
+class ChatResponse(BaseModel):
+    role: str = "assistant"
+    content: str
+
+
+class IngestTextRequest(BaseModel):
+    documents: List[str]
+
+
+class IngestVaultDocRequest(BaseModel):
+    doc_ids: List[int]
