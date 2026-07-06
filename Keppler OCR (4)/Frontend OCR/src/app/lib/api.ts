@@ -135,6 +135,18 @@ export const ocrApi = {
   result: (jobId: string) => get<OCRJobResult>(`/ocr/job/${jobId}/result`),
   downloadExport: (jobId: string, format: "md" | "json" | "pdf" | "docx" | "xlsx", filename: string) =>
     downloadBlob(`/ocr/job/${jobId}/export?format=${format}`, filename),
+  getOriginalFileUrl: async (jobId: string) => {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/ocr/job/${jobId}/original`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        "Bypass-Tunnel-Reminder": "true",
+      },
+    });
+    if (!res.ok) throw new ApiError(res.status, "Failed to load original image");
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  },
 };
 
 // ─── PDF Summarizer ─────────────────────────────────────────────────────────

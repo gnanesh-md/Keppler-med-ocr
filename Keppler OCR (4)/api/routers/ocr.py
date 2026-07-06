@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import Response
+from fastapi.responses import Response, FileResponse
 from PIL import Image
 
 from core.config import settings
@@ -175,6 +175,25 @@ async def job_result(job_id: str, current_user: CurrentUser = Depends(get_curren
         "entities": doc["metadata"].get("predictions", []),
         "confidence_score": doc["confidence_score"],
     }
+
+
+@router.get("/job/{job_id}/original")
+async def job_original(job_id: str, current_user: CurrentUser = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        job = _get_owned_job(db, job_id, current_user.user_id)
+        doc = db.query(Document).filter(Document.id == job.document_id).first()
+        if not doc or not doc.upload_path or not os.path.exists(doc.upload_path):
+            raise HTTPException(status_code=404, detail="Original document not found.")
+        
+        ext = os.path.splitext(doc.filename)[1].lower()
+        media_type = "application/pdf" if ext == ".pdf" else "image/jpeg"
+        if ext == ".png": media_type = "image/png"
+        
+        return FileResponse(doc.upload_path, media_type=media_type)
+    finally:
+        db.close()
+
 
 
 @router.get("/job/{job_id}/export")
