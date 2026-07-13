@@ -1,0 +1,255 @@
+{
+  "patient_identification": {
+    "patient_name": null,
+    "age": "58",
+    "sex": "Male",
+    "ip_no": "123456",
+    "umr_no": null,
+    "address": null,
+    "guardian_name": null,
+    "contact_number": null,
+    "ward_bed": "326",
+    "department_unit": null,
+    "treating_doctor": "Dr. Smith",
+    "treating_nurse": "Nurse Doe",
+    "admission_date": "6/13/2026",
+    "discharge_date": null,
+    "hospital_days": null,
+    "admission_type": {},
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": null,
+    "working_diagnosis": null,
+    "final_diagnosis": [
+      {
+        "#": "Hypertension",
+        "ICD Code": null
+      },
+      {
+        "#": "Diabetes Mellitus Type 2",
+        "ICD Code": null
+      },
+      {
+        "#": "Coronary Artery Disease",
+        "ICD Code": null
+      },
+      {
+        "#": "Chronic Obstructive Pulmonary Disease (COPD)",
+        "ICD Code": null
+      },
+      {
+        "#": "Previous CABG surgery in 2015",
+        "ICD Code": null
+      }
+    ],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "checked",
+      "detail": "Penicillin"
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": "Sulfa drugs",
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": null,
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": [
+      {
+        "Date": "qd",
+        "Drug Name": "Metoprolol",
+        "Dose": "50 mg",
+        "Route": "PO",
+        "Frequency": null
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Amlodipine",
+        "Dose": "5 mg",
+        "Route": "PO",
+        "Frequency": null
+      },
+      {
+        "Date": "bid",
+        "Drug Name": "Metformin",
+        "Dose": "500 mg",
+        "Route": "PO",
+        "Frequency": null
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Rosuvastatin",
+        "Dose": "10 mg",
+        "Route": "PO",
+        "Frequency": null
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Aspirin",
+        "Dose": "100 mg",
+        "Route": "PO",
+        "Frequency": null
+      }
+    ]
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "BP": "120/80 mmHg",
+      "HR": "72 bpm",
+      "RR": "18 breaths/min",
+      "Temp": "98.6\u00b0F",
+      "SpO2": "98%"
+    },
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": []
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "checked",
+      "detail": "Alert, oriented to time, place, person"
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "checked",
+      "detail": null
+    },
+    "respiration": null,
+    "gastrointestinal": null,
+    "bowel": null,
+    "bladder": null,
+    "skin": "Intact",
+    "sleeping_pattern": null,
+    "appetite": null,
+    "mode_of_intake": null,
+    "coping_mechanism": null,
+    "language_spoken": null,
+    "prior_medication_history": null
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": [
+      {
+        "Assessment / Focus": "Hypertension",
+        "Diagnosis": "Hypertension",
+        "Intervention": "Continue current medications",
+        "Rationale": null,
+        "Evaluation": null
+      },
+      {
+        "Assessment / Focus": "Diabetes Mellitus Type 2",
+        "Diagnosis": "Diabetes Mellitus Type 2",
+        "Intervention": "Continue current medications",
+        "Rationale": null,
+        "Evaluation": null
+      },
+      {
+        "Assessment / Focus": "Coronary Artery Disease",
+        "Diagnosis": "Coronary Artery Disease",
+        "Intervention": "Refer to cardiologist for coronary artery disease management",
+        "Rationale": null,
+        "Evaluation": null
+      },
+      {
+        "Assessment / Focus": "Chronic Obstructive Pulmonary Disease (COPD)",
+        "Diagnosis": "Chronic Obstructive Pulmonary Disease (COPD)",
+        "Intervention": "Refer to pulmonologist for COPD management",
+        "Rationale": null,
+        "Evaluation": null
+      }
+    ]
+  },
+  "clinical_course": {
+    "course_narrative": null,
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": "13",
+    "fields_captured": "13",
+    "fields_blank": "",
+    "low_confidence_fields": ""
+  }
+}

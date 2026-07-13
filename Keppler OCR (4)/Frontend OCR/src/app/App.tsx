@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ThemeProvider, useTheme, SidebarNavigation, SidebarButton, SecondaryNav, SecondaryNavItem, Avatar as AstraAvatar } from "@figma/astraui";
+import { ThemeProvider, useTheme, SidebarNavigation, SidebarButton, Avatar as AstraAvatar } from "@figma/astraui";
 import {
   FileText, Brain, Search, Shield, Users, Settings,
   ChevronLeft, ChevronRight, ChevronsLeft, Upload, Clock, Star,
@@ -17,7 +17,7 @@ import {
   PanelRight, SplitSquareHorizontal, Maximize2,
   SquareTerminal, FilePlus, ClipboardList, Beaker,
   HeartPulse, Microscope, Ambulance, Syringe, Inbox,
-  Paperclip, Sun, Moon
+  Paperclip, Sun, Moon, ArrowLeft
 } from "lucide-react";
 import kepplerLogo from "../imports/ChatGPT_Image_Jul_1__2026__11_20_03_AM.png";
 import { ImageWithFallback } from "./components/figma/ImageWithFallback";
@@ -458,6 +458,26 @@ const AuthWelcome = ({ onNavigate }: { onNavigate: (s: Screen) => void }) => {
 };
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
+const HoverTooltip = ({ children, text }: { children: React.ReactNode; text: string }) => (
+  <div className="group relative flex">
+    {children}
+    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1 bg-gray-800 text-white dark:bg-gray-200 dark:text-black text-[11px] font-medium rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[100] pointer-events-none shadow-lg">
+      {text}
+    </div>
+  </div>
+);
+
+const CustomSidebarButton = ({ icon, onClick, active, title, className = "" }: { icon: React.ReactNode, onClick: () => void, active?: boolean, title: string, className?: string }) => (
+  <HoverTooltip text={title}>
+    <button
+      onClick={onClick}
+      className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors ${active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted hover:text-foreground"} ${className}`}
+    >
+      <div className="w-5 h-5 flex items-center justify-center">{icon}</div>
+    </button>
+  </HoverTooltip>
+);
+
 const Sidebar = ({
   current,
   onNavigate,
@@ -479,128 +499,31 @@ const Sidebar = ({
   };
 
   return (
-    <div 
-      className="flex h-full"
-      onMouseEnter={() => setCollapsed(false)}
-      onMouseLeave={() => setCollapsed(true)}
-    >
-      <div className="relative h-full z-20">
-        {/* Absolute positioned custom logo that overlays the default AstraLogo */}
-        <div className="absolute top-2.5 left-[10px] w-10 h-10 z-50 pointer-events-none bg-white rounded-full flex items-center justify-center overflow-hidden shadow-sm border border-border">
+    <div className="flex h-full">
+      <div className="relative h-full z-20 flex flex-col bg-card border-r border-border w-[70px] py-4 items-center">
+        {/* Custom logo */}
+        <div className="w-10 h-10 mb-8 bg-white rounded-full flex items-center justify-center overflow-hidden shadow-sm border border-border flex-shrink-0">
           <ImageWithFallback src={kepplerLogo} alt="Keppler AI" className="w-full h-full object-cover scale-[1.15]" />
         </div>
 
-        <SidebarNavigation
-          className="[&>div:first-child]:opacity-0"
-          footer={
-            <>
-              <SidebarButton
-                icon={<PanelLeft className="size-full" strokeWidth={1.5} />}
-                onClick={() => setCollapsed(!collapsed)}
-                title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-              />
-              <SidebarButton
-                icon={theme === "dark" ? <Sun className="size-full" strokeWidth={1.5} /> : <Moon className="size-full" strokeWidth={1.5} />}
-                onClick={toggleTheme}
-                title="Toggle Theme"
-              />
-              <SidebarButton
-                icon={<Shield className="size-full" strokeWidth={1.5} />}
-                onClick={() => navItem("admin")}
-                active={current === "admin"}
-                title="Admin"
-              />
-              <SidebarButton
-                icon={<Settings className="size-full" strokeWidth={1.5} />}
-                onClick={() => navItem("settings")}
-                active={current === "settings"}
-                title="Settings"
-              />
-              <SidebarButton
-                icon={<LogOut className="size-full text-destructive" strokeWidth={1.5} />}
-                onClick={() => { logout(); onNavigate("auth-login"); }}
-                title="Sign Out"
-              />
-              <AstraAvatar type="initial" initials={initials} size="medium" shape="circle" />
-            </>
-          }
-        >
-          <SidebarButton 
-            icon={<Home className="size-full" strokeWidth={1.5} />} 
-            onClick={() => navItem("home")} 
-            active={current === "home"} 
-            title="Workspace" 
-          />
-          <SidebarButton 
-            icon={<FileSearch className="size-full" strokeWidth={1.5} />} 
-            onClick={() => navItem("ocr-workspace")} 
-            active={current === "ocr-workspace" || current === "ocr-processing" || current === "ocr-result"} 
-            title="OCR Workspace" 
-          />
-          <SidebarButton 
-            icon={<Database className="size-full" strokeWidth={1.5} />} 
-            onClick={() => navItem("document-vault")} 
-            active={current === "document-vault"} 
-            title="Document Vault" 
-          />
-          <SidebarButton 
-            icon={<Layers className="size-full" strokeWidth={1.5} />} 
-            onClick={() => navItem("pdf-summarizer")} 
-            active={current === "pdf-summarizer"} 
-            title="PDF Summarizer"
-          />
-          <SidebarButton 
-            icon={<Sparkles className="size-full" strokeWidth={1.5} />} 
-            onClick={() => navItem("ai-assistant")} 
-            active={current === "ai-assistant"} 
-            title="AI Assistant" 
-          />
-        </SidebarNavigation>
-      </div>
-
-      {!collapsed && (
-        <div className="relative h-full border-r border-border bg-card shadow-sm">
-          <SecondaryNav title="KEPPLER">
-            <SecondaryNavItem 
-              icon={<Home className="w-4 h-4" />}
-              label="Workspace"
-              active={current === "home"} 
-              onClick={() => onNavigate("home")}
-            />
-            <SecondaryNavItem 
-              icon={<FileSearch className="w-4 h-4" />}
-              label="OCR Workspace"
-              active={current === "ocr-workspace" || current === "ocr-processing" || current === "ocr-result"} 
-              onClick={() => onNavigate("ocr-workspace")}
-            />
-            <SecondaryNavItem 
-              icon={<Database className="w-4 h-4" />}
-              label="Document Vault"
-              active={current === "document-vault"} 
-              onClick={() => onNavigate("document-vault")}
-            />
-            <SecondaryNavItem 
-              icon={<Layers className="w-4 h-4" />}
-              label="PDF Summarizer"
-              active={current === "pdf-summarizer"} 
-              onClick={() => onNavigate("pdf-summarizer")}
-            />
-            <SecondaryNavItem 
-              icon={<Sparkles className="w-4 h-4" />}
-              label="AI Assistant"
-              active={current === "ai-assistant"} 
-              onClick={() => onNavigate("ai-assistant")}
-            />
-          </SecondaryNav>
-          <button 
-            onClick={() => setCollapsed(true)}
-            className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors z-50 bg-card border border-border shadow-sm"
-            title="Close sidebar"
-          >
-            <ChevronsLeft className="w-4 h-4" />
-          </button>
+        <div className="flex-1 flex flex-col gap-3 w-full px-2 items-center">
+          <CustomSidebarButton icon={<Home strokeWidth={1.5} />} onClick={() => navItem("home")} active={current === "home"} title="Workspace" />
+          <CustomSidebarButton icon={<FileSearch strokeWidth={1.5} />} onClick={() => navItem("ocr-workspace")} active={current === "ocr-workspace" || current === "ocr-processing" || current === "ocr-result"} title="OCR Workspace" />
+          <CustomSidebarButton icon={<Database strokeWidth={1.5} />} onClick={() => navItem("document-vault")} active={current === "document-vault"} title="Document Vault" />
+          <CustomSidebarButton icon={<Layers strokeWidth={1.5} />} onClick={() => navItem("pdf-summarizer")} active={current === "pdf-summarizer"} title="PDF Summarizer" />
+          <CustomSidebarButton icon={<Sparkles strokeWidth={1.5} />} onClick={() => navItem("ai-assistant")} active={current === "ai-assistant"} title="AI Assistant" />
         </div>
-      )}
+
+        <div className="flex flex-col gap-3 w-full px-2 items-center mt-auto">
+          <CustomSidebarButton icon={theme === "dark" ? <Sun strokeWidth={1.5} /> : <Moon strokeWidth={1.5} />} onClick={toggleTheme} title="Toggle Theme" />
+          <CustomSidebarButton icon={<Shield strokeWidth={1.5} />} onClick={() => navItem("admin")} active={current === "admin"} title="Admin" />
+          <CustomSidebarButton icon={<Settings strokeWidth={1.5} />} onClick={() => navItem("settings")} active={current === "settings"} title="Settings" />
+          <CustomSidebarButton icon={<LogOut strokeWidth={1.5} />} onClick={() => { logout(); onNavigate("auth-login"); }} title="Sign Out" className="text-destructive hover:bg-destructive/10 hover:text-destructive" />
+          <div className="mt-2">
+            <AstraAvatar type="initial" initials={initials} size="medium" shape="circle" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -800,6 +723,8 @@ const OCRWorkspace = ({
   onStartJob: (jobId: string, filename: string) => void;
   onViewResult: (jobId: string, filename: string) => void;
 }) => {
+  const [viewingResultId, setViewingResultId] = useState<string | null>(null);
+  const [viewingResultFilename, setViewingResultFilename] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [tab, setTab] = useState<"upload" | "queue">("upload");
   const [blueprints, setBlueprints] = useState<string[]>([]);
@@ -820,7 +745,7 @@ const OCRWorkspace = ({
     };
   }, []);
 
-  const pollJob = (jobId: string) => {
+  const pollJob = (jobId: string, filename: string) => {
     pollTimers.current[jobId] = setInterval(async () => {
       try {
         const status = await ocrApi.jobStatus(jobId);
@@ -851,7 +776,7 @@ const OCRWorkspace = ({
           { jobId: res.job_id, filename: file.name, size: formatBytes(file.size), status: "PENDING", progress: 0 },
           ...prev,
         ]);
-        pollJob(res.job_id);
+        pollJob(res.job_id, file.name);
         onStartJob(res.job_id, file.name);
       } catch (e) {
         setUploadError(e instanceof ApiError ? e.message : "Upload failed. Please try again.");
@@ -955,14 +880,7 @@ const OCRWorkspace = ({
             </div>
           </div>
 
-          {/* Active Job Visualizer */}
-          {jobs.length > 0 && (jobs[0].status === "PROCESSING" || jobs[0].status === "PENDING") && (
-            <OCRProgressViewer 
-              jobId={jobs[0].jobId} 
-              filename={jobs[0].filename} 
-              onDone={(id, name) => onViewResult(id, name)} 
-            />
-          )}
+          {/* Active Job Visualizer Removed */}
 
           <div className="bg-card border border-border rounded-xl overflow-hidden mt-6">
               <table className="w-full text-sm">
@@ -995,7 +913,10 @@ const OCRWorkspace = ({
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-1">
                           <button
-                            onClick={() => onViewResult(row.jobId, row.filename)}
+                            onClick={() => {
+                              setViewingResultId(row.jobId);
+                              setViewingResultFilename(row.filename);
+                            }}
                             disabled={row.status !== "COMPLETED"}
                             className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             title="View result"
@@ -1020,6 +941,21 @@ const OCRWorkspace = ({
                 </tbody>
               </table>
             </div>
+
+            {/* Modal Result Viewer */}
+            {viewingResultId && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6" onClick={(e) => { if (e.target === e.currentTarget) setViewingResultId(null); }}>
+                <div className="w-full max-w-7xl h-full max-h-[90vh] flex flex-col shadow-2xl rounded-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                  <OCRResult 
+                    jobId={viewingResultId} 
+                    filename={viewingResultFilename} 
+                    onNavigate={() => {}} 
+                    embedded={true}
+                    onClose={() => setViewingResultId(null)}
+                  />
+                </div>
+              </div>
+            )}
         </div>
       </div>
     </div>
@@ -1027,106 +963,6 @@ const OCRWorkspace = ({
 };
 
 // ─── OCR Processing Screen ────────────────────────────────────────────────────
-const OCR_STEPS = [
-  { label: "Image enhancement", desc: "Deskewing, denoising, contrast normalization", at: 5 },
-  { label: "Layout detection", desc: "Identifying columns, headers, tables, signatures", at: 15 },
-  { label: "OCR extraction", desc: "Character and word recognition per page", at: 70 },
-  { label: "Medical NLP correction", desc: "Clinical terminology correction and normalization", at: 85 },
-  { label: "Table extraction", desc: "Structured data from lab result tables", at: 90 },
-  { label: "Entity extraction", desc: "Medications, diagnoses, lab values, dates", at: 95 },
-  { label: "Finalizing report", desc: "Compiling markdown and archiving to vault", at: 100 },
-];
-
-
-const OCRProgressViewer = ({
-  jobId,
-  filename,
-  onDone,
-}: {
-  jobId: string | null;
-  filename: string | null;
-  onDone: (jobId: string, filename: string) => void;
-}) => {
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!jobId) return;
-    let cancelled = false;
-    const interval = setInterval(async () => {
-      try {
-        const status = await ocrApi.jobStatus(jobId);
-        if (cancelled) return;
-        setProgress(status.progress);
-        if (status.status === "COMPLETED") {
-          clearInterval(interval);
-          onDone(jobId, filename ?? "document");
-        } else if (status.status === "FAILED") {
-          clearInterval(interval);
-          setError(status.error_message ?? "Extraction failed.");
-        }
-      } catch {
-        // fail silently
-      }
-    }, 500);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [jobId]);
-
-  if (!jobId) return null;
-
-  return (
-    <div className="w-full max-w-xl mx-auto my-6">
-      <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center">
-            <Cpu className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-foreground">{error ? "Extraction failed" : "Processing document…"}</h2>
-            <p className="text-sm text-muted-foreground">{filename}</p>
-          </div>
-          <div className="ml-auto text-right">
-            <div className="text-2xl font-semibold text-primary">{Math.round(progress)}%</div>
-          </div>
-        </div>
-
-        {error ? (
-          <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{error}</div>
-        ) : (
-          <>
-            <ProgressBar value={progress} label="" />
-
-            <div className="mt-8 space-y-4">
-              {OCR_STEPS.map((step, i) => {
-                const done = progress >= step.at;
-                const prevAt = i === 0 ? 0 : OCR_STEPS[i - 1].at;
-                const active = !done && progress >= prevAt;
-                return (
-                  <div key={step.label} className={`flex items-start gap-4 ${!done && !active ? "opacity-40" : ""}`}>
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      done ? "bg-med-success" : active ? "bg-primary animate-pulse" : "bg-border"
-                    }`}>
-                      {done ? <Check className="w-3.5 h-3.5 text-white" /> : <span className="text-[10px] font-semibold text-white">{i + 1}</span>}
-                    </div>
-                    <div className="flex-1">
-                      <div className={`text-sm font-medium ${active ? "text-primary" : "text-foreground"}`}>{step.label}</div>
-                      <div className="text-xs text-med-text-tertiary">{step.desc}</div>
-                    </div>
-                    {done && <span className="text-[10px] text-med-success font-medium mt-1">Done</span>}
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-
 // ─── OCR Result ───────────────────────────────────────────────────────────────
 type ParsedBlock = 
   | { type: "key-value"; pairs: { key: string; value: string }[] }
@@ -1223,8 +1059,20 @@ function parseDocumentContent(md: string): ParsedBlock[] {
   return blocks;
 }
 
-const OCRResult = ({ jobId, filename, onNavigate }: { jobId: string | null; filename: string | null; onNavigate: (s: Screen) => void }) => {
-  const [activePanel, setActivePanel] = useState<"text" | "structured" | "entities" | "tables">("structured");
+const OCRResult = ({ 
+  jobId, 
+  filename, 
+  onNavigate,
+  embedded,
+  onClose
+}: { 
+  jobId: string | null; 
+  filename: string | null; 
+  onNavigate: (s: Screen) => void;
+  embedded?: boolean;
+  onClose?: () => void;
+}) => {
+  const [activePanel, setActivePanel] = useState<"text" | "entities" | "structured">("text");
   const [result, setResult] = useState<OCRJobResult | null>(null);
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1280,36 +1128,66 @@ const OCRResult = ({ jobId, filename, onNavigate }: { jobId: string | null; file
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-background overflow-hidden">
-      <TopBar
-        title="OCR Result"
-        subtitle={`${result.filename} · ${result.pages.length} page(s) · Confidence ${result.confidence_score}%`}
-        actions={
-          <div className="flex items-center gap-2">
+    <div className={`${embedded ? "h-full w-full bg-card" : "flex-1 bg-background"} flex flex-col overflow-hidden`}>
+      {embedded ? (
+        <div className="h-14 border-b border-border flex items-center px-6 gap-4 flex-shrink-0 bg-secondary/50">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-sm font-semibold text-foreground truncate">Result: {filename}</h1>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1.5 text-xs font-medium text-foreground bg-secondary border border-border px-3 py-1.5 rounded-lg hover:bg-muted transition-colors">
+                <button className="flex items-center gap-1.5 text-xs font-medium text-foreground bg-card border border-border px-3 py-1.5 rounded-lg hover:bg-muted transition-colors">
                   <Download className="w-3.5 h-3.5" /> Download
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-32">
                 {(["md", "pdf", "docx", "xlsx", "json"] as const).map((fmt) => (
-                  <DropdownMenuItem key={fmt} onClick={() => ocrApi.downloadExport(jobId, fmt, `${result.filename}.${fmt}`)}>
+                  <DropdownMenuItem key={fmt} onClick={() => ocrApi.downloadExport(jobId, fmt, `${filename}.${fmt}`)}>
                     <span className="uppercase text-xs font-medium">{fmt} Format</span>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <button
-              onClick={openInAI}
-              disabled={ingesting}
-              className="flex items-center gap-1.5 bg-primary hover:hover:bg-primary/90 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60"
-            >
-              <Sparkles className="w-3 h-3" /> {ingesting ? "Loading…" : "Open in AI"}
-            </button>
+            {onClose && (
+              <button onClick={onClose} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors ml-2">
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
-        }
-      />
+        </div>
+      ) : (
+        <TopBar
+          title="OCR Result"
+          subtitle={`${result.filename} · ${result.pages.length} page(s) · Confidence ${result.confidence_score}%`}
+          actions={
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-1.5 text-xs font-medium text-foreground bg-secondary border border-border px-3 py-1.5 rounded-lg hover:bg-muted transition-colors">
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-32">
+                {(["md", "pdf", "docx", "xlsx", "json"] as const).map((fmt) => (
+                  <DropdownMenuItem key={fmt} onClick={() => ocrApi.downloadExport(jobId, fmt, `${result.filename}.${fmt}`)}>
+                    <span className="uppercase text-xs font-medium">{fmt} Format</span>
+                  </DropdownMenuItem>
+                ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <button
+                onClick={openInAI}
+                disabled={ingesting}
+                className="flex items-center gap-1.5 bg-primary hover:hover:bg-primary/90 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60"
+              >
+                <Sparkles className="w-3 h-3" /> {ingesting ? "Loading…" : "Open in AI"}
+              </button>
+            </div>
+          }
+        />
+      )}
+      
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 overflow-hidden bg-background">
         
         {/* Left Panel: Original Input */}
@@ -1351,7 +1229,7 @@ const OCRResult = ({ jobId, filename, onNavigate }: { jobId: string | null; file
             </div>
             
             <div className="flex bg-muted p-1 rounded-lg flex-wrap">
-              {(["structured", "entities", "tables", "text"] as const).map((p) => (
+              {(["text", "entities", "structured"] as const).map((p) => (
                 <button
                   key={p}
                   onClick={() => setActivePanel(p)}
@@ -1463,69 +1341,7 @@ const OCRResult = ({ jobId, filename, onNavigate }: { jobId: string | null; file
               </div>
             )}
 
-            {activePanel === "tables" && (
-              <div className="space-y-6">
-                {parsedBlocks.filter(b => b.type !== "text").length === 0 && (
-                  <div className="text-sm text-muted-foreground">No data detected.</div>
-                )}
-                {parsedBlocks.filter(b => b.type !== "text").map((block, idx) => (
-                  <div key={idx} className="w-full">
-                    {block.type === "key-value" && (
-                      <div className="w-full border border-border rounded-xl overflow-hidden shadow-sm bg-card">
-                        <div className="bg-muted/30 px-4 py-3 border-b border-border text-xs font-semibold tracking-wide text-foreground uppercase flex items-center gap-2">
-                          <Database className="w-3.5 h-3.5" /> Extracted Data
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
-                          {block.pairs.map((pair, pIdx) => (
-                            <div key={pIdx} className="flex flex-col p-4 gap-1.5 hover:bg-muted/10 transition-colors border-b border-border">
-                              <div className="text-xs font-medium text-muted-foreground">{pair.key}</div>
-                              <div className="text-sm font-semibold text-foreground">{pair.value}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {block.type === "section" && (
-                      <div className="w-full border border-border rounded-xl overflow-hidden shadow-sm bg-card">
-                        <div className="bg-blue-50 dark:bg-blue-900/10 px-4 py-3 border-b border-border flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                          <span className="text-xs font-bold tracking-wide text-blue-700 dark:text-blue-400 uppercase">{block.title}</span>
-                        </div>
-                        <div className="p-5 space-y-1.5">
-                          {block.lines.map((line, lIdx) => (
-                            <div key={lIdx} className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
-                              {line}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {block.type === "table" && (
-                      <div className="w-full border border-border rounded-xl overflow-x-auto shadow-sm bg-card">
-                        <table className="w-full text-sm text-left">
-                          <thead className="bg-muted/40 border-b border-border">
-                            <tr>
-                              {block.headers.map((h, hIdx) => (
-                                <th key={hIdx} className="px-4 py-3 text-xs font-semibold tracking-wide text-foreground uppercase whitespace-nowrap">{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border">
-                            {block.rows.map((row, rIdx) => (
-                              <tr key={rIdx} className="hover:bg-muted/20 transition-colors">
-                                {row.map((cell, cIdx) => (
-                                  <td key={cIdx} className="px-4 py-3 text-sm text-foreground whitespace-nowrap">{cell}</td>
-                                ))}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+
 
             {activePanel === "text" && (
               <BasicMarkdown 
@@ -1537,16 +1353,9 @@ const OCRResult = ({ jobId, filename, onNavigate }: { jobId: string | null; file
           
           {/* Bottom actions */}
           <div className="border-t border-border p-4 bg-card flex gap-3">
-            <button
-              onClick={openInAI}
-              disabled={ingesting}
-              className="flex-1 flex items-center justify-center gap-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg py-2.5 hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-60"
-            >
-              <Sparkles className="w-4 h-4" /> AI Assistant
-            </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex-1 flex items-center justify-center gap-2 text-sm font-medium bg-secondary text-secondary-foreground border border-border rounded-lg py-2.5 hover:bg-muted transition-colors shadow-sm">
+                <button className="flex-1 flex items-center justify-center gap-2 text-sm font-medium bg-primary text-primary-foreground border border-border rounded-lg py-2.5 hover:bg-primary/90 transition-colors shadow-sm">
                   <Download className="w-4 h-4" /> Export
                 </button>
               </DropdownMenuTrigger>
@@ -1584,56 +1393,130 @@ function splitMarkdownSections(md: string): { title: string; body: string }[] {
   return sections;
 }
 
+export interface SummarizerJobEntry {
+  jobId: string;
+  filename: string;
+  size: string;
+  status: JobStatus["status"];
+  progress: number;
+}
+
 const PDFSummarizer = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [jobId, setJobId] = useState<string | null>(null);
+  const [viewingResultId, setViewingResultId] = useState<string | null>(null);
+  const [viewingResultFilename, setViewingResultFilename] = useState<string | null>(null);
   const [status, setStatus] = useState<JobStatus["status"] | null>(null);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<SummarizerJobResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  
+  // Recent jobs state
+  const [jobs, setJobs] = useState<SummarizerJobEntry[]>([]);
+  const pollTimers = useRef<Record<string, ReturnType<typeof setInterval>>>({});
+
+  const pollJobForTable = (jId: string) => {
+    pollTimers.current[jId] = setInterval(async () => {
+      try {
+        const s = await summarizerApi.jobStatus(jId);
+        setJobs((prev) => prev.map((j) => (j.jobId === jId ? { ...j, status: s.status, progress: s.progress } : j)));
+        if (s.status === "COMPLETED" || s.status === "FAILED") {
+          clearInterval(pollTimers.current[jId]);
+          delete pollTimers.current[jId];
+        }
+      } catch {
+        clearInterval(pollTimers.current[jId]);
+        delete pollTimers.current[jId];
+      }
+    }, 2500);
+  };
 
   const upload = async (f: File) => {
-    setFile(f);
+    setIsUploading(true);
     setError(null);
-    setResult(null);
-    setStatus("PENDING");
-    setProgress(0);
     try {
       const res = await summarizerApi.upload(f);
-      setJobId(res.job_id);
+      setIsUploading(false);
+      
+      // Add to recent jobs
+      setJobs((prev) => [
+        { jobId: res.job_id, filename: f.name, size: formatBytes(f.size), status: "PENDING", progress: 0 },
+        ...prev,
+      ]);
+      pollJobForTable(res.job_id);
+      
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Upload failed.");
-      setStatus(null);
+      setIsUploading(false);
     }
   };
 
   useEffect(() => {
-    if (!jobId || status === "COMPLETED" || status === "FAILED") return;
+    if (!viewingResultId || status === "COMPLETED" || status === "FAILED") return;
     const interval = setInterval(async () => {
       try {
-        const s = await summarizerApi.jobStatus(jobId);
+        const s = await summarizerApi.jobStatus(viewingResultId);
         setStatus(s.status);
         setProgress(s.progress);
         if (s.status === "COMPLETED") {
-          const r = await summarizerApi.result(jobId);
+          const r = await summarizerApi.result(viewingResultId);
           setResult(r);
         } else if (s.status === "FAILED") {
           setError(s.error_message ?? "Summarization failed.");
         }
       } catch {
-        /* transient network error — keep polling */
+        /* transient network error */
       }
     }, 2000);
     return () => clearInterval(interval);
-  }, [jobId, status]);
+  }, [viewingResultId, status]);
+
+  const openResultModal = async (jId: string, filename: string) => {
+    setViewingResultId(jId);
+    setViewingResultFilename(filename);
+    setFile(new File([], filename));
+    setError(null);
+    setResult(null);
+    setStatus("PROCESSING");
+    setProgress(0);
+    try {
+        const s = await summarizerApi.jobStatus(jId);
+        setStatus(s.status);
+        setProgress(s.progress);
+        if (s.status === "COMPLETED") {
+          const r = await summarizerApi.result(jId);
+          setResult(r);
+        } else if (s.status === "FAILED") {
+          setError(s.error_message ?? "Summarization failed.");
+        }
+    } catch (e) {
+        setError("Failed to load job status.");
+    }
+  };
 
   const sections = result ? splitMarkdownSections(result.summary_md) : [];
   const pageNums = result ? Object.keys(result.page_texts).map(Number).sort((a, b) => a - b) : [];
   const exportFormats = ["pdf", "docx", "md"] as const;
+  
+  const statusChip = (s: SummarizerJobEntry["status"]) => {
+    const map: Record<SummarizerJobEntry["status"], [string, string]> = {
+      PENDING: ["Queued", "gray"],
+      PROCESSING: ["Processing", "blue"],
+      COMPLETED: ["Completed", "green"],
+      FAILED: ["Failed", "red"],
+    };
+    const [label, color] = map[s] || ["Unknown", "gray"];
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-${color}-100 dark:bg-${color}-900/30 text-${color}-800 dark:text-${color}-300`}>
+        {label}
+      </span>
+    );
+  };
 
   return (
-    <div className="flex-1 flex flex-col bg-background overflow-hidden">
+    <div className="flex-1 flex flex-col bg-background overflow-hidden relative">
       <input
         ref={fileInputRef}
         type="file"
@@ -1643,110 +1526,236 @@ const PDFSummarizer = () => {
       />
       <TopBar
         title="PDF Summarizer"
-        subtitle={file ? `${file.name}${pageNums.length ? ` · ${pageNums.length} pages` : ""}` : "Upload a case file to generate a clinical summary"}
-        actions={
-          result && jobId ? (
-            <div className="flex items-center gap-2">
-              {exportFormats.map((fmt) => (
-                <button
-                  key={fmt}
-                  onClick={() => summarizerApi.downloadExport(jobId, fmt, `${result.filename}.${fmt}`)}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground border border-border px-3 py-1.5 rounded-lg hover:bg-muted transition-colors uppercase"
-                >
-                  <Download className="w-3 h-3" /> {fmt}
-                </button>
-              ))}
-            </div>
-          ) : undefined
-        }
+        subtitle="Upload a case file to generate a clinical summary"
       />
 
-      {!file ? (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-switch-background bg-card hover:border-primary hover:bg-background rounded-2xl flex flex-col items-center justify-center py-20 px-16 cursor-pointer transition-all"
-          >
-            <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mb-5">
-              <Layers className="w-7 h-7 text-primary" />
+      <div className="flex-1 flex flex-col p-5 overflow-y-auto space-y-5">
+        {error && !viewingResultId && (
+          <div className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+            {error}
+          </div>
+        )}
+
+        {/* Drop zone */}
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const dropped = e.dataTransfer.files[0];
+            if (dropped && (dropped.type === "application/pdf" || dropped.name.toLowerCase().endsWith(".pdf"))) {
+              upload(dropped);
+            }
+          }}
+          onClick={() => fileInputRef.current?.click()}
+          className={`border-2 border-dashed rounded-xl flex items-center justify-between px-6 py-4 transition-all cursor-pointer ${
+            dragging
+              ? "border-primary bg-secondary"
+              : "border-switch-background bg-card hover:border-[#93C5FD] hover:bg-background"
+          }`}
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center flex-shrink-0">
+              <Layers className="w-6 h-6 text-primary" />
             </div>
-            <p className="text-base font-medium text-foreground mb-1">Upload a hospital case file PDF</p>
-            <p className="text-sm text-muted-foreground mb-5">Pages are OCR'd then map-reduce summarized into a structured clinical report</p>
-            <button className="bg-primary hover:bg-primary/90 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">Choose PDF</button>
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                {isUploading ? "Uploading file..." : "Drop hospital case file PDF here"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Pages are OCR'd then map-reduce summarized into a structured clinical report</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+              disabled={isUploading}
+              className="bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium px-4 py-2 rounded-lg transition-colors border border-border disabled:opacity-50"
+            >
+              Browse files
+            </button>
           </div>
         </div>
-      ) : (
-        <div className="flex-1 flex overflow-hidden">
-          {/* Page list */}
-          <div className="w-44 border-r border-border bg-card flex-shrink-0 overflow-y-auto p-3 space-y-2">
-            {(pageNums.length ? pageNums : [1]).map((n) => (
-              <div key={n} className="bg-background border border-border rounded-lg p-2">
-                <div className="w-full h-24 bg-card border border-border rounded flex items-center justify-center mb-1">
-                  <FileText className="w-5 h-5 text-switch-background" />
-                </div>
-                <div className="text-[10px] text-center text-med-text-tertiary">Page {n}</div>
-              </div>
-            ))}
-          </div>
 
-          {/* Main content */}
-          <div className="flex-1 flex overflow-hidden">
-            <div className="flex-1 p-5 overflow-y-auto space-y-4">
-              {error && (
-                <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{error}</div>
+        {/* Jobs Table */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden mt-6 shadow-sm">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/10">
+                {["Document", "Size", "Status", "Progress", "Actions"].map((h) => (
+                  <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#F1F5F9] dark:divide-border/50">
+              {jobs.length === 0 && (
+                <tr><td colSpan={5} className="px-5 py-6 text-xs text-muted-foreground text-center">No documents uploaded yet.</td></tr>
               )}
-
-              {!result && !error && (
-                <div className="bg-card border border-border rounded-xl p-5 flex items-center gap-3">
-                  <div className="w-2 h-2 bg-med-warning rounded-full animate-pulse flex-shrink-0" />
-                  <span className="text-sm text-muted-foreground">
-                    {progress < 50 ? "Reading pages via OCR…" : "Building structured clinical summary…"}
-                  </span>
-                </div>
-              )}
-
-              {result && (
-                <>
-                  <div className="text-xs font-semibold text-med-text-tertiary uppercase tracking-widest">
-                    Case Summary {result.patient_meta.name ? `— ${result.patient_meta.name}` : ""}
-                  </div>
-                  {sections.map((s, i) => (
-                    <div key={i} className="bg-card border border-border rounded-xl p-4">
-                      <div className="flex items-center gap-3 mb-2">
-                        <CheckCircle className="w-4 h-4 text-med-success flex-shrink-0" />
-                        <span className="text-sm font-medium text-foreground">{s.title}</span>
-                      </div>
-                      <div className="text-xs text-med-text-secondary leading-relaxed ml-7 whitespace-pre-wrap">{s.body}</div>
+              {jobs.map((row) => (
+                <tr key={row.jobId} className="hover:bg-background transition-colors">
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <FileText className="w-4 h-4 text-primary/70 flex-shrink-0" />
+                      <span className="text-xs font-medium text-foreground truncate max-w-[200px]">{row.filename}</span>
                     </div>
-                  ))}
-                </>
-              )}
-            </div>
+                  </td>
+                  <td className="px-5 py-3.5 text-xs text-muted-foreground">{row.size}</td>
+                  <td className="px-5 py-3.5">{statusChip(row.status)}</td>
+                  <td className="px-5 py-3.5 w-36">
+                    <ProgressBar value={row.progress} />
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openResultModal(row.jobId, row.filename)}
+                        disabled={row.status === "FAILED"}
+                        className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="View Summary"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => row.status === "COMPLETED" && summarizerApi.downloadExport(row.jobId, "md", `${row.filename}.md`)}
+                        disabled={row.status !== "COMPLETED"}
+                        className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="Download markdown"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-            {/* Right panel — progress */}
-            <div className="w-64 border-l border-border bg-card flex flex-col flex-shrink-0 p-4 space-y-5">
-              <div>
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Processing Progress</div>
-                <ProgressBar value={progress} label={status ?? ""} color="#2563EB" />
-              </div>
-
-              {result && jobId && (
-                <div className="border-t border-border pt-4">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Export Options</div>
-                  <div className="space-y-2">
-                    {exportFormats.map((fmt) => (
+      {/* Modal Result Viewer */}
+      {viewingResultId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6" onClick={(e) => { if (e.target === e.currentTarget) setViewingResultId(null); }}>
+          <div className="w-full max-w-7xl h-full max-h-[90vh] flex flex-col shadow-2xl rounded-xl overflow-hidden animate-in fade-in zoom-in duration-200 bg-background">
+            <TopBar
+              title="Summary Result"
+              subtitle={viewingResultFilename ? `${viewingResultFilename}${pageNums.length ? ` · ${pageNums.length} pages` : ""}` : ""}
+              actions={
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setViewingResultId(null)}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground border border-border px-3 py-1.5 rounded-lg hover:bg-muted transition-colors mr-2"
+                  >
+                     <ArrowLeft className="w-3 h-3" /> Close
+                  </button>
+                  {result ? (
+                    exportFormats.map((fmt) => (
                       <button
                         key={fmt}
-                        onClick={() => summarizerApi.downloadExport(jobId, fmt, `${result.filename}.${fmt}`)}
-                        className="w-full text-left text-xs text-med-text-secondary px-3 py-2 rounded-lg border border-border hover:bg-background transition-colors flex items-center justify-between uppercase"
+                        onClick={() => summarizerApi.downloadExport(viewingResultId, fmt, `${result.filename}.${fmt}`)}
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground border border-border px-3 py-1.5 rounded-lg hover:bg-muted transition-colors uppercase"
                       >
-                        {fmt}
-                        <Download className="w-3 h-3 text-med-text-tertiary" />
+                        <Download className="w-3 h-3" /> {fmt}
                       </button>
-                    ))}
-                  </div>
+                    ))
+                  ) : undefined}
                 </div>
-              )}
+              }
+            />
+
+            <div className="flex-1 flex overflow-hidden">
+              {/* Page list */}
+              <div className="w-44 border-r border-border bg-card flex-shrink-0 overflow-y-auto p-3 space-y-2">
+                {(pageNums.length ? pageNums : [1]).map((n) => (
+                  <div key={n} className="bg-background border border-border rounded-lg p-2">
+                    <div className="w-full h-24 bg-card border border-border rounded flex items-center justify-center mb-1">
+                      <FileText className="w-5 h-5 text-switch-background" />
+                    </div>
+                    <div className="text-[10px] text-center text-med-text-tertiary">Page {n}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Main content */}
+              <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 p-5 overflow-y-auto space-y-4">
+                  {error && (
+                    <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{error}</div>
+                  )}
+
+                  {!result && !error && (
+                    <div className="bg-card border border-border rounded-xl p-5 flex items-center gap-3">
+                      <div className="w-2 h-2 bg-med-warning rounded-full animate-pulse flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">
+                        {progress < 50 ? "Reading pages via OCR…" : "Building structured clinical summary…"}
+                      </span>
+                    </div>
+                  )}
+
+                  {result && (
+                    <>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="text-xs font-semibold text-med-text-tertiary uppercase tracking-widest">
+                          Case Summary {result.patient_meta.name ? `— ${result.patient_meta.name}` : ""}
+                        </div>
+                      </div>
+                      
+                      <div className="mb-8">
+                        <h3 className="text-sm font-semibold mb-4 text-foreground border-b border-border pb-2">Clinical Summary</h3>
+                        {sections.map((s, i) => (
+                          <div key={i} className="bg-card border border-border rounded-xl p-4 mb-4">
+                            <div className="flex items-center gap-3 mb-2">
+                              <CheckCircle className="w-4 h-4 text-med-success flex-shrink-0" />
+                              <span className="text-sm font-medium text-foreground">{s.title}</span>
+                            </div>
+                            <div className="text-xs text-med-text-secondary leading-relaxed ml-7 whitespace-pre-wrap">{s.body}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-semibold mb-4 text-foreground border-b border-border pb-2">Extracted Content</h3>
+                        <div className="bg-card border border-border rounded-xl p-5 overflow-y-auto max-h-full">
+                          {pageNums.map((n) => (
+                            <div key={n} className="mb-6 last:mb-0">
+                              <h4 className="text-sm font-semibold text-foreground mb-2 border-b border-border pb-1">Page {n}</h4>
+                              <div className="text-xs text-med-text-secondary leading-relaxed whitespace-pre-wrap font-mono bg-muted/30 p-3 rounded-lg border border-border/50">
+                                {result.page_texts[n] || "No text extracted for this page."}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Right panel — progress */}
+                <div className="w-64 border-l border-border bg-card flex flex-col flex-shrink-0 p-4 space-y-5">
+                  <div>
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Processing Progress</div>
+                    <ProgressBar value={progress} label={status ?? ""} color="#2563EB" />
+                  </div>
+
+                  {result && viewingResultId && (
+                    <div className="border-t border-border pt-4">
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Export Options</div>
+                      <div className="space-y-2">
+                        {exportFormats.map((fmt) => (
+                          <button
+                            key={fmt}
+                            onClick={() => summarizerApi.downloadExport(viewingResultId, fmt, `${result.filename}.${fmt}`)}
+                            className="w-full text-left text-xs text-med-text-secondary px-3 py-2 rounded-lg border border-border hover:bg-background transition-colors flex items-center justify-between uppercase"
+                          >
+                            {fmt}
+                            <Download className="w-3 h-3 text-med-text-tertiary" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1754,6 +1763,7 @@ const PDFSummarizer = () => {
     </div>
   );
 };
+
 
 // ─── AI Medical Assistant ─────────────────────────────────────────────────────
 function newSessionId(): string {
@@ -1794,11 +1804,27 @@ const AIAssistant = () => {
     if (!text || sending) return;
     setInput("");
     setError(null);
-    setMessages((m) => [...m, { role: "user", content: text }]);
+    setMessages((m) => [...m, { role: "user", content: text }, { role: "assistant", content: "" }]);
     setSending(true);
     try {
-      const res = await assistantApi.chat(text, sessionId);
-      setMessages((m) => [...m, { role: "assistant", content: res.content }]);
+      await assistantApi.chatStream(text, sessionId, {
+        onCitations: (citations) => {
+          setMessages((m) => {
+            const next = [...m];
+            next[next.length - 1] = { ...next[next.length - 1], citations };
+            return next;
+          });
+        },
+        onToken: (token) => {
+          setMessages((m) => {
+            const next = [...m];
+            const last = next[next.length - 1];
+            next[next.length - 1] = { ...last, content: last.content + token };
+            return next;
+          });
+        },
+        onError: (msg) => setError(msg),
+      });
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "The assistant could not answer that. Please try again.");
     } finally {
@@ -1857,10 +1883,23 @@ const AIAssistant = () => {
                     </p>
                   ))}
                 </div>
+                {msg.role === "assistant" && msg.citations && msg.citations.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 px-1">
+                    {msg.citations.map((c, ci) => (
+                      <span
+                        key={ci}
+                        title={c.snippet}
+                        className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border cursor-default"
+                      >
+                        [{ci + 1}] {c.filename} · {c.page_label}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}
-          {sending && (
+          {sending && messages[messages.length - 1]?.content === "" && (
             <div className="flex gap-3">
               <div className="w-7 h-7 bg-secondary rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                 <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
@@ -2467,7 +2506,7 @@ const SettingsView = () => {
 function AppInner() {
   const { isAuthenticated } = useAuth();
   const [screen, setScreen] = useState<Screen>("auth-login");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [activeOcrJobId, setActiveOcrJobId] = useState<string | null>(null);
   const [activeOcrFilename, setActiveOcrFilename] = useState<string | null>(null);
 

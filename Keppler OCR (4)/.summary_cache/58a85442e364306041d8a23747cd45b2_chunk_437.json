@@ -1,0 +1,112 @@
+{
+  "patient_identification": {
+    "patient_name": "[Handwritten]",
+    "age": "[Handwritten]",
+    "sex": "[Handwritten]",
+    "ip_no": "[Handwritten]",
+    "umr_no": "[Handwritten]",
+    "address": "[Handwritten]",
+    "guardian_name": "[Handwritten]",
+    "contact_number": "[Handwritten]",
+    "ward_bed": "[Handwritten]",
+    "department_unit": "[Handwritten]",
+    "treating_doctor": "[Handwritten]",
+    "treating_nurse": "[Handwritten]",
+    "admission_date": "[Handwritten]",
+    "discharge_date": "[Handwritten]",
+    "hospital_days": "[Handwritten]",
+    "admission_type": {},
+    "government_employee": {},
+    "re_admitted": {},
+    "mlc": {},
+    "blood_group": "[Handwritten]"
+  },
+  "diagnosis": {
+    "presenting_complaint": "[Handwritten]",
+    "working_diagnosis": "[Handwritten]",
+    "final_diagnosis": [],
+    "secondary_diagnoses": "[Handwritten]"
+  },
+  "allergies": {
+    "drug_allergy": {},
+    "food_allergy": {},
+    "blood_transfusion_allergy": {},
+    "other_allergies": "[Handwritten]",
+    "high_alert_medication": {}
+  },
+  "procedure": {
+    "planned_procedure": "[Handwritten]",
+    "operative_eye_site": "[Handwritten]",
+    "iol_power": "[Handwritten]",
+    "surgeon": "[Handwritten]",
+    "procedure_date": "[Handwritten]",
+    "preop_checklist": {},
+    "intra_op_complications": "[Handwritten]"
+  },
+  "medications": {
+    "plan_of_care_change": "[Handwritten]",
+    "medication_table": []
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {},
+    "mews_total": {},
+    "investigations": []
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {},
+    "pressure_sore_braden": {},
+    "pain_score": {},
+    "acuity_score": {}
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {},
+    "speech": {},
+    "adl_independent": {},
+    "respiration": "[Handwritten]",
+    "gastrointestinal": "[Handwritten]",
+    "bowel": "[Handwritten]",
+    "bladder": "[Handwritten]",
+    "skin": "[Handwritten]",
+    "sleeping_pattern": "[Handwritten]",
+    "appetite": "[Handwritten]",
+    "mode_of_intake": "[Handwritten]",
+    "coping_mechanism": "[Handwritten]",
+    "language_spoken": "[Handwritten]",
+    "prior_medication_history": "[Handwritten]"
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": "[Handwritten]",
+    "education_datetime": "[Handwritten]"
+  },
+  "fall_prevention": {
+    "applicable_risk_level": "[Handwritten]",
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": "[Handwritten]",
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {},
+    "vitals_unstable": {},
+    "fall_risk_handover": "[Handwritten]",
+    "skin_integrity_checked": {},
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": "[Handwritten]",
+    "discharge_advice": "[Handwritten]"
+  },
+  "data_quality": {
+    "pages_processed": "[Handwritten]",
+    "fields_captured": "[Handwritten]",
+    "fields_blank": "[Handwritten]",
+    "low_confidence_fields": "[Handwritten]"
+  }
+}

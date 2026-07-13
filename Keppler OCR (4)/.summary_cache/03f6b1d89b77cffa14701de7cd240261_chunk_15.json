@@ -1,0 +1,200 @@
+{
+  "patient_identification": {
+    "patient_name": null,
+    "age": null,
+    "sex": null,
+    "ip_no": null,
+    "umr_no": null,
+    "address": "Garden Mile Road, Kalyanpur, Ahmedabad, Gujarat 382505",
+    "guardian_name": null,
+    "contact_number": "+91-79-40000000",
+    "ward_bed": null,
+    "department_unit": "TRAUMA INTENSIVE CRITICAL CARE",
+    "treating_doctor": null,
+    "treating_nurse": null,
+    "admission_date": null,
+    "discharge_date": null,
+    "hospital_days": null,
+    "admission_type": {},
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": "O+"
+  },
+  "diagnosis": {
+    "presenting_complaint": null,
+    "working_diagnosis": null,
+    "final_diagnosis": [],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": "Decompressive Craniotomy + Newborn Cranial Surgery",
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": "08/01/2022",
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": []
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {},
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": [
+      {
+        "Investigation": "Hb%",
+        "Advised Date": null,
+        "Result": "12",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Blood Sugar (mg/dl)",
+        "Advised Date": null,
+        "Result": "Fasting: PP: Random:",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Blood Grouping & Typing",
+        "Advised Date": null,
+        "Result": "O+",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Urine Exam",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "LFT Results",
+        "Advised Date": null,
+        "Result": "Total Protein: Alb: SGPT: SGOT: AST: ALT: APPT: 0.8%",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Complete Electrolytes",
+        "Advised Date": null,
+        "Result": "Na: 137 Cl: 102 K: 3.2 Ca: 9.2 Mg: 0.8 Ph: 7.4 BUN: 10 mg/dl Creatinine: 0.9 mg/dl Uric Acid: 5.4 mg/dl Bilirubin: 0.5 mg/dl Albumin: 3.5 g/dl Total Protein: 6.5 g/dl SGPT: 40 U/L SGOT: 40 U/L AST: 40 U/L ALT: 40 U/L APPT: 0.8%",
+        "Reported Date": null
+      }
+    ]
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": null,
+    "gastrointestinal": null,
+    "bowel": null,
+    "bladder": null,
+    "skin": null,
+    "sleeping_pattern": null,
+    "appetite": null,
+    "mode_of_intake": null,
+    "coping_mechanism": null,
+    "language_spoken": null,
+    "prior_medication_history": null
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": null,
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": null,
+    "fields_captured": null,
+    "fields_blank": null,
+    "low_confidence_fields": null
+  }
+}

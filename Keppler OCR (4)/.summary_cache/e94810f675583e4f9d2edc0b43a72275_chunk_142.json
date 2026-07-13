@@ -1,0 +1,338 @@
+{
+  "patient_identification": {
+    "patient_name": "John Doe",
+    "age": "01/01/1975",
+    "sex": "Male",
+    "ip_no": "123456789",
+    "umr_no": null,
+    "address": null,
+    "guardian_name": null,
+    "contact_number": null,
+    "ward_bed": null,
+    "department_unit": "Internal Medicine",
+    "treating_doctor": null,
+    "treating_nurse": null,
+    "admission_date": "05/10/2023",
+    "discharge_date": "05/15/2023",
+    "hospital_days": null,
+    "admission_type": {},
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": null,
+    "working_diagnosis": null,
+    "final_diagnosis": [],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": null,
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": [
+      {
+        "Date": "05/10/2023",
+        "Drug Name": "Metformin",
+        "Dose": "500mg",
+        "Route": "PO",
+        "Frequency": "BID"
+      },
+      {
+        "Date": "05/10/2023",
+        "Drug Name": "Rosiglitazone",
+        "Dose": "4mg",
+        "Route": "PO",
+        "Frequency": "QD"
+      },
+      {
+        "Date": "05/10/2023",
+        "Drug Name": "Insulin Aspart",
+        "Dose": "10U",
+        "Route": "SC",
+        "Frequency": "BID"
+      },
+      {
+        "Date": "05/10/2023",
+        "Drug Name": "Acetaminophen",
+        "Dose": "500mg",
+        "Route": "PO",
+        "Frequency": "PRN"
+      }
+    ]
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "Temperature": "98.6\u00b0F",
+      "Blood Pressure": "120/80 mmHg",
+      "Heart Rate": "72 bpm",
+      "Respiratory Rate": "18 breaths/min",
+      "Oxygen Saturation": "98%",
+      "Blood Glucose": "100 mg/dL"
+    },
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": [
+      {
+        "Investigation": "WBC",
+        "Advised Date": "05/10/2023",
+        "Result": "7.5 x 10^3/\u00b5L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "RBC",
+        "Advised Date": "05/10/2023",
+        "Result": "4.5 x 10^6/\u00b5L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Hemoglobin",
+        "Advised Date": "05/10/2023",
+        "Result": "14.2 g/dL",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Platelets",
+        "Advised Date": "05/10/2023",
+        "Result": "220 x 10^3/\u00b5L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Creatinine",
+        "Advised Date": "05/10/2023",
+        "Result": "0.8 mg/dL",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Urea Nitrogen",
+        "Advised Date": "05/10/2023",
+        "Result": "18 mg/dL",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Sodium",
+        "Advised Date": "05/10/2023",
+        "Result": "135 mEq/L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Potassium",
+        "Advised Date": "05/10/2023",
+        "Result": "4.2 mEq/L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Chloride",
+        "Advised Date": "05/10/2023",
+        "Result": "102 mEq/L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "CO2",
+        "Advised Date": "05/10/2023",
+        "Result": "24 mEq/L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Albumin",
+        "Advised Date": "05/10/2023",
+        "Result": "3.8 g/dL",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Total Protein",
+        "Advised Date": "05/10/2023",
+        "Result": "6.5 g/dL",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Bilirubin",
+        "Advised Date": "05/10/2023",
+        "Result": "0.5 mg/dL",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "AST",
+        "Advised Date": "05/10/2023",
+        "Result": "35 U/L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "ALT",
+        "Advised Date": "05/10/2023",
+        "Result": "28 U/L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "ALP",
+        "Advised Date": "05/10/2023",
+        "Result": "120 U/L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "GGT",
+        "Advised Date": "05/10/2023",
+        "Result": "35 U/L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "TSH",
+        "Advised Date": "05/10/2023",
+        "Result": "4.5 mIU/L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Free T4",
+        "Advised Date": "05/10/2023",
+        "Result": "1.2 ng/dL",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Thyroid Peroxidase Antibodies",
+        "Advised Date": "05/10/2023",
+        "Result": "Negative",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Anti-thyroglobulin antibodies",
+        "Advised Date": "05/10/2023",
+        "Result": "Negative",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "TSH receptor antibodies",
+        "Advised Date": "05/10/2023",
+        "Result": "Negative",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Thyroid-stimulating hormone receptor antibodies",
+        "Advised Date": "05/10/2023",
+        "Result": "Negative",
+        "Reported Date": null
+      }
+    ]
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": null,
+    "gastrointestinal": null,
+    "bowel": null,
+    "bladder": null,
+    "skin": null,
+    "sleeping_pattern": null,
+    "appetite": null,
+    "mode_of_intake": null,
+    "coping_mechanism": null,
+    "language_spoken": null,
+    "prior_medication_history": null
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": null,
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": null,
+    "fields_captured": null,
+    "fields_blank": null,
+    "low_confidence_fields": null
+  }
+}

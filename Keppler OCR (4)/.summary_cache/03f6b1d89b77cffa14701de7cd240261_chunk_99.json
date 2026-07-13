@@ -1,0 +1,242 @@
+{
+  "patient_identification": {
+    "patient_name": "Mr. Naim Ullah",
+    "age": "70",
+    "sex": "M",
+    "ip_no": "0139",
+    "umr_no": null,
+    "address": "Golden Mile Road, Rajkot, Gujarat, India 360075",
+    "guardian_name": null,
+    "contact_number": "+91-2892-400000, +91-2892-400001",
+    "ward_bed": "04",
+    "department_unit": null,
+    "treating_doctor": null,
+    "treating_nurse": null,
+    "admission_date": null,
+    "discharge_date": null,
+    "hospital_days": null,
+    "admission_type": {},
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": null,
+    "working_diagnosis": null,
+    "final_diagnosis": [],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": null,
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": []
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {},
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": []
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": "Resp: 23",
+    "gastrointestinal": null,
+    "bowel": "Slowbow",
+    "bladder": "F.C",
+    "skin": "Normal",
+    "sleeping_pattern": null,
+    "appetite": null,
+    "mode_of_intake": null,
+    "coping_mechanism": null,
+    "language_spoken": null,
+    "prior_medication_history": null
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": null,
+    "shift_events": [
+      {
+        "Date": "12/5/16",
+        "Time": "3pm",
+        "Event / Note": "General Condition",
+        "Recorded By": null
+      },
+      {
+        "Date": "12/5/16",
+        "Time": "3pm",
+        "Event / Note": "Vitals: Temp: 98.5F Pulse: 111 Resp: 23 BP: 106/60 SpO2: 96",
+        "Recorded By": null
+      },
+      {
+        "Date": "12/5/16",
+        "Time": "3pm",
+        "Event / Note": "Invasive Lines: Central Line, Arterial Line",
+        "Recorded By": null
+      },
+      {
+        "Date": "12/5/16",
+        "Time": "3pm",
+        "Event / Note": "IV Fluids: I.VF RL 50ml/hr @ 50ml/hr",
+        "Recorded By": null
+      },
+      {
+        "Date": "12/5/16",
+        "Time": "3pm",
+        "Event / Note": "Diet: RT food",
+        "Recorded By": null
+      },
+      {
+        "Date": "12/5/16",
+        "Time": "3pm",
+        "Event / Note": "Bowels: Slowbow",
+        "Recorded By": null
+      },
+      {
+        "Date": "12/5/16",
+        "Time": "3pm",
+        "Event / Note": "Bladder: F.C",
+        "Recorded By": null
+      },
+      {
+        "Date": "12/5/16",
+        "Time": "3pm",
+        "Event / Note": "Skin Integrity: Normal",
+        "Recorded By": null
+      },
+      {
+        "Date": "12/5/16",
+        "Time": "3pm",
+        "Event / Note": "Cross Consultations: -",
+        "Recorded By": null
+      },
+      {
+        "Date": "12/5/16",
+        "Time": "3pm",
+        "Event / Note": "If Any Investigations: -",
+        "Recorded By": null
+      },
+      {
+        "Date": "12/5/16",
+        "Time": "3pm",
+        "Event / Note": "Pending Reports to be Collected: -",
+        "Recorded By": null
+      },
+      {
+        "Date": "12/5/16",
+        "Time": "3pm",
+        "Event / Note": "Any Procedures: -",
+        "Recorded By": null
+      },
+      {
+        "Date": "12/5/16",
+        "Time": "3pm",
+        "Event / Note": "Notes: \u2192 patient is conscious\n\u2192 IVF RL 50ml/hr\n\u2192 DX RT feeding",
+        "Recorded By": null
+      }
+    ]
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": "16",
+    "fields_captured": null,
+    "fields_blank": null,
+    "low_confidence_fields": null
+  }
+}

@@ -1,0 +1,264 @@
+{
+  "patient_identification": {
+    "patient_name": null,
+    "age": null,
+    "sex": null,
+    "ip_no": null,
+    "umr_no": null,
+    "address": "Garden Mile Road, Kuching, Sarawak, Malaysia 93050",
+    "guardian_name": null,
+    "contact_number": "+6082-217777, +6082-217778",
+    "ward_bed": null,
+    "department_unit": "Trauma & Emergency Critical Care",
+    "treating_doctor": "Dr Ravi Kumar, Dr Hallam",
+    "treating_nurse": null,
+    "admission_date": null,
+    "discharge_date": null,
+    "hospital_days": null,
+    "admission_type": {
+      "Hypertension": "checked",
+      "Diabetes": "checked",
+      "Asthma": "checked",
+      "Allergy": "checked"
+    },
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": null,
+    "working_diagnosis": null,
+    "final_diagnosis": [
+      {
+        "#": 1,
+        "Diagnosis": "Emergency Cholecystectomy",
+        "ICD Code": null
+      },
+      {
+        "#": 2,
+        "Diagnosis": "S/D Liver Biopsy",
+        "ICD Code": null
+      }
+    ],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": "25/2/2023",
+    "preop_checklist": {
+      "Hypertension": "checked",
+      "Diabetes": "checked",
+      "Asthma": "checked",
+      "Allergy": "checked"
+    },
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": []
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "BP": "140/90",
+      "Heart Rate": "80",
+      "Respiratory Rate": "12",
+      "Temperature": "36.5",
+      "Weight": "70kg"
+    },
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": [
+      {
+        "Investigation": "WBC",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Blood Sugar",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Blood Grouping",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Urine Exam",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "LFT Test",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Urinary Electrolytes",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "X-Ray Chest",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "E.C.G",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      }
+    ]
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {
+      "Hypertension": "checked",
+      "Diabetes": "checked",
+      "Asthma": "checked",
+      "Allergy": "checked"
+    },
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {
+      "Hypertension": "checked",
+      "Diabetes": "checked",
+      "Asthma": "checked",
+      "Allergy": "checked"
+    },
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": "Clear Airways: Normal Spine: Normal",
+    "gastrointestinal": "Clear Airways: Normal Spine: Normal",
+    "bowel": "Clear Airways: Normal Spine: Normal",
+    "bladder": "Clear Airways: Normal Spine: Normal",
+    "skin": "Clear Airways: Normal Spine: Normal",
+    "sleeping_pattern": "Clear Airways: Normal Spine: Normal",
+    "appetite": "Clear Airways: Normal Spine: Normal",
+    "mode_of_intake": "Clear Airways: Normal Spine: Normal",
+    "coping_mechanism": "Clear Airways: Normal Spine: Normal",
+    "language_spoken": "Clear Airways: Normal Spine: Normal",
+    "prior_medication_history": "Clear Airways: Normal Spine: Normal"
+  },
+  "patient_education": {
+    "education_items": {
+      "Hypertension": "checked",
+      "Diabetes": "checked",
+      "Asthma": "checked",
+      "Allergy": "checked"
+    },
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {
+      "Hypertension": "checked",
+      "Diabetes": "checked",
+      "Asthma": "checked",
+      "Allergy": "checked"
+    }
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": null,
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {
+      "Hypertension": "checked",
+      "Diabetes": "checked",
+      "Asthma": "checked",
+      "Allergy": "checked"
+    },
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": null,
+    "fields_captured": null,
+    "fields_blank": null,
+    "low_confidence_fields": null
+  }
+}

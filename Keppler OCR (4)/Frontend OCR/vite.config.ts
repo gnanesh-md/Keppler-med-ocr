@@ -35,6 +35,8 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:8888',
     },
+    // Allows access via the cloudflared quick-tunnel URL used for remote browser access.
+    allowedHosts: true,
   },
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.

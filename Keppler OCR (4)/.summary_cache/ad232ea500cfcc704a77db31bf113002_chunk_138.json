@@ -1,0 +1,163 @@
+{
+  "patient_identification": {
+    "patient_name": "Mr. Ramesh Singh",
+    "age": "24 Yrs",
+    "sex": "Male",
+    "ip_no": "10753865",
+    "umr_no": "UNREGISTERED",
+    "address": "",
+    "guardian_name": "",
+    "contact_number": "",
+    "ward_bed": "",
+    "department_unit": "",
+    "treating_doctor": "Dr. SHWAMAJ NEENI",
+    "treating_nurse": "",
+    "admission_date": "",
+    "discharge_date": "",
+    "hospital_days": "",
+    "admission_type": {},
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": ""
+  },
+  "diagnosis": {
+    "presenting_complaint": "",
+    "working_diagnosis": "",
+    "final_diagnosis": [],
+    "secondary_diagnoses": ""
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": "",
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": "",
+    "operative_eye_site": "",
+    "iol_power": "",
+    "surgeon": "",
+    "procedure_date": "",
+    "preop_checklist": {},
+    "intra_op_complications": ""
+  },
+  "medications": {
+    "plan_of_care_change": "",
+    "medication_table": []
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {},
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": []
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "checked",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "checked",
+      "detail": null
+    },
+    "respiration": "",
+    "gastrointestinal": "",
+    "bowel": "",
+    "bladder": "",
+    "skin": "",
+    "sleeping_pattern": "",
+    "appetite": "",
+    "mode_of_intake": "",
+    "coping_mechanism": "",
+    "language_spoken": "",
+    "prior_medication_history": ""
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": "",
+    "education_datetime": ""
+  },
+  "fall_prevention": {
+    "applicable_risk_level": "",
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": "",
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": "",
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": "",
+    "discharge_advice": ""
+  },
+  "data_quality": {
+    "pages_processed": "",
+    "fields_captured": "",
+    "fields_blank": "",
+    "low_confidence_fields": ""
+  }
+}

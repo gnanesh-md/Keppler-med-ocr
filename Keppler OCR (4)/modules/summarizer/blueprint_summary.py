@@ -80,7 +80,7 @@ def build_extraction_prompt(blueprint: dict, ocr_text: str) -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# RENDERER  — always prints every field, blanks included
+# RENDERER  — omits missing fields to keep the summary clean
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _is_blank(v) -> bool:
@@ -113,8 +113,8 @@ def render_case_summary_markdown(data: dict, blueprint: dict) -> str:
     md = []
     for sec in blueprint["sections"]:
         sec_data = data.get(sec["id"], {}) or {}
-        md.append(f"\n## {sec['title']}\n")
-
+        
+        sec_md = []
         for fld in sec["fields"]:
             key, label, ftype = fld["key"], fld["label"], fld["type"]
             val = sec_data.get(key)
@@ -123,71 +123,84 @@ def render_case_summary_markdown(data: dict, blueprint: dict) -> str:
             if ftype == "checkbox":
                 state = (val or {}).get("state") if isinstance(val, dict) else val
                 detail = (val or {}).get("detail") if isinstance(val, dict) else None
+                s = (state or "not_recorded").lower()
+                if s not in ("checked", "unchecked"):
+                    stats["blank"] += 1
+                    continue
+                
                 line = f"- **{label}:** {box(state)}"
                 if detail and not _is_blank(detail):
                     line += f" — {detail}"
-                md.append(line)
-                stats["filled" if state in ("checked", "unchecked") else "blank"] += 1
+                sec_md.append(line)
+                stats["filled"] += 1
 
             elif ftype in ("checklist", "checklist_kv"):
-                md.append(f"- **{label}:**")
                 items = fld.get("items", [])
                 any_filled = False
+                checklist_md = []
+                
                 if ftype == "checklist":
                     for item in items:
                         st = (val or {}).get(item) if isinstance(val, dict) else None
-                        if st in ("checked", "unchecked"):
+                        s = (st or "not_recorded").lower()
+                        if s in ("checked", "unchecked"):
                             any_filled = True
-                        md.append(f"    - {box(st)} {item}")
+                            checklist_md.append(f"    - {box(st)} {item}")
                 else:  # checklist_kv  (label -> value)
                     for it in items:
                         ik, il = it["key"], it["label"]
                         v = (val or {}).get(ik) if isinstance(val, dict) else None
-                        shown = v if not _is_blank(v) else BLANK
                         if not _is_blank(v):
                             any_filled = True
-                        md.append(f"    - {il}: {shown}")
-                stats["filled" if any_filled else "blank"] += 1
+                            checklist_md.append(f"    - {il}: {v}")
+                
+                if any_filled:
+                    sec_md.append(f"- **{label}:**")
+                    sec_md.extend(checklist_md)
+                    stats["filled"] += 1
+                else:
+                    stats["blank"] += 1
 
             elif ftype == "table":
                 cols = fld.get("columns", [])
-                md.append(f"\n**{label}:**\n")
-                md.append("| " + " | ".join(cols) + " |")
-                md.append("|" + "|".join(["---"] * len(cols)) + "|")
                 rows = val if isinstance(val, list) else []
                 if rows:
+                    sec_md.append(f"\n**{label}:**\n")
+                    sec_md.append("| " + " | ".join(cols) + " |")
+                    sec_md.append("|" + "|".join(["---"] * len(cols)) + "|")
                     for row in rows:
                         cells = [str(row.get(c, "") or BLANK) if isinstance(row, dict) else BLANK
                                  for c in cols]
-                        md.append("| " + " | ".join(cells) + " |")
+                        sec_md.append("| " + " | ".join(cells) + " |")
+                    sec_md.append("")
                     stats["filled"] += 1
                 else:
-                    md.append("| " + " | ".join([BLANK] * len(cols)) + " |")
                     stats["blank"] += 1
-                md.append("")
 
             elif ftype == "score":
                 v = val if isinstance(val, dict) else {}
                 score = v.get("value")
                 band = v.get("band")
                 if _is_blank(score) and _is_blank(band):
-                    md.append(f"- **{label}:** {BLANK}")
                     stats["blank"] += 1
                 else:
                     txt = f"{score if not _is_blank(score) else BLANK}"
                     if not _is_blank(band):
                         txt += f"  ({band})"
-                    md.append(f"- **{label}:** {txt}")
+                    sec_md.append(f"- **{label}:** {txt}")
                     stats["filled"] += 1
 
             else:  # text / number / narrative
                 if _is_blank(val):
-                    md.append(f"- **{label}:** {BLANK}")
                     stats["blank"] += 1
                 else:
-                    md.append(f"- **{label}:** {val}")
+                    sec_md.append(f"- **{label}:** {val}")
                     stats["filled"] += 1
-        md.append("")
+        
+        if sec_md:
+            md.append(f"\n## {sec['title']}\n")
+            md.extend(sec_md)
+            md.append("")
 
     # Auto-fill the data-quality section if the model didn't.
     dq = data.setdefault("data_quality", {})

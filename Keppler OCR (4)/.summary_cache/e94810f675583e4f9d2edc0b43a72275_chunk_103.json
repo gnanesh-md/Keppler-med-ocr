@@ -1,0 +1,13 @@
+{
+  "vitals_labs": {
+    "mews_total": {
+      "value": 3,
+      "band": "+"
+    },
+    "vitals_on_admission": {
+      "date_time": "4/1/26 10AM",
+      "score": 1,
+      "action": "+ Vital sign checked & recorded @"
+    }
+  }
+}

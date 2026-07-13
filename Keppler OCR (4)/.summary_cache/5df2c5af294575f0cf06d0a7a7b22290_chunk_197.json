@@ -1,0 +1,242 @@
+{
+  "patient_identification": {
+    "patient_name": "John Doe",
+    "age": "04/22/1967",
+    "sex": null,
+    "ip_no": "123456789",
+    "umr_no": null,
+    "address": "123 Main St, Anytown, USA",
+    "guardian_name": "Jane Doe",
+    "contact_number": "555-555-5555",
+    "ward_bed": "123 / 72",
+    "department_unit": null,
+    "treating_doctor": "Dr. Smith",
+    "treating_nurse": "Nurse Doe",
+    "admission_date": "2/13/2014",
+    "discharge_date": "2/15/2014",
+    "hospital_days": "2",
+    "admission_type": {},
+    "government_employee": {},
+    "re_admitted": {},
+    "mlc": {},
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": "Diabetic ketoacidosis",
+    "working_diagnosis": "Hyperglycemia",
+    "final_diagnosis": [
+      {
+        "#": "1",
+        "Diagnosis": "Type 1 Diabetes Mellitus",
+        "ICD Code": null
+      },
+      {
+        "#": "2",
+        "Diagnosis": "Diabetic Ketoacidosis",
+        "ICD Code": null
+      }
+    ],
+    "secondary_diagnoses": "Tachycardia, Hypertension"
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": "2/15/2014",
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": "Continue insulin therapy, Start metformin, Monitor blood glucose levels",
+    "medication_table": [
+      {
+        "Date": "2/15/2014",
+        "Drug Name": "Metformin",
+        "Dose": "500 mg",
+        "Route": "Once daily",
+        "Frequency": "Once daily"
+      },
+      {
+        "Date": "2/15/2014",
+        "Drug Name": "Insulin",
+        "Dose": "10 units",
+        "Route": "Twice daily",
+        "Frequency": "Twice daily"
+      },
+      {
+        "Date": "2/15/2014",
+        "Drug Name": "Aspirin",
+        "Dose": "100 mg",
+        "Route": "Once daily",
+        "Frequency": "Once daily"
+      }
+    ]
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "Temperature": "98.6\u00b0F",
+      "Blood Pressure": "120/80 mmHg",
+      "Heart Rate": "72 bpm",
+      "Respiratory Rate": "18 breaths/min",
+      "Oxygen Saturation": "97%",
+      "Blood Glucose": "120 mg/dL"
+    },
+    "mews_total": {
+      "value": 10,
+      "band": "High"
+    },
+    "investigations": [
+      {
+        "Investigation": "Blood Glucose",
+        "Advised Date": "2/15/2014",
+        "Result": "200 mg/dL",
+        "Reported Date": "2/15/2014"
+      },
+      {
+        "Investigation": "Urine Ketones",
+        "Advised Date": "2/15/2014",
+        "Result": "Positive",
+        "Reported Date": "2/15/2014"
+      },
+      {
+        "Investigation": "Blood Urea Nitrogen",
+        "Advised Date": "2/15/2014",
+        "Result": "25 mg/dL",
+        "Reported Date": "2/15/2014"
+      },
+      {
+        "Investigation": "Creatinine",
+        "Advised Date": "2/15/2014",
+        "Result": "1.2 mg/dL",
+        "Reported Date": "2/15/2014"
+      },
+      {
+        "Investigation": "Sodium",
+        "Advised Date": "2/15/2014",
+        "Result": "135 mEq/L",
+        "Reported Date": "2/15/2014"
+      },
+      {
+        "Investigation": "Potassium",
+        "Advised Date": "2/15/2014",
+        "Result": "4.2 mEq/L",
+        "Reported Date": "2/15/2014"
+      },
+      {
+        "Investigation": "Chloride",
+        "Advised Date": "2/15/2014",
+        "Result": "102 mEq/L",
+        "Reported Date": "2/15/2014"
+      },
+      {
+        "Investigation": "pH",
+        "Advised Date": "2/15/2014",
+        "Result": "7.35",
+        "Reported Date": "2/15/2014"
+      }
+    ]
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": 5,
+      "band": "Moderate"
+    },
+    "pressure_sore_braden": {
+      "value": 10,
+      "band": "Low"
+    },
+    "pain_score": {
+      "value": 4,
+      "band": "Moderate"
+    },
+    "acuity_score": {
+      "value": 10,
+      "band": "Critical"
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": "Normal",
+    "gastrointestinal": "No complaints",
+    "bowel": "Regular",
+    "bladder": "No complaints",
+    "skin": "No lesions",
+    "sleeping_pattern": "Normal",
+    "appetite": "Good",
+    "mode_of_intake": "Oral",
+    "coping_mechanism": "Relaxed",
+    "language_spoken": "English",
+    "prior_medication_history": "Metformin, Insulin, Aspirin"
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": "Nurse Doe",
+    "education_datetime": "2/15/2014"
+  },
+  "fall_prevention": {
+    "applicable_risk_level": "Moderate",
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": [
+      {
+        "Assessment / Focus": "Type 1 Diabetes Mellitus",
+        "Diagnosis": "Diabetic Ketoacidosis",
+        "Intervention": "Continue insulin therapy, Start metformin",
+        "Rationale": "To manage hyperglycemia",
+        "Evaluation": "Monitor blood glucose levels"
+      }
+    ]
+  },
+  "clinical_course": {
+    "course_narrative": "Patient was admitted with diabetic ketoacidosis and hyperglycemia. Insulin therapy was initiated, and metformin was started. Blood glucose levels were monitored.",
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {},
+    "vitals_unstable": {},
+    "fall_risk_handover": "Moderate",
+    "skin_integrity_checked": {},
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": "Home",
+    "discharge_advice": "Follow-up appointment"
+  },
+  "data_quality": {
+    "pages_processed": "1",
+    "fields_captured": "19",
+    "fields_blank": "0",
+    "low_confidence_fields": "0"
+  }
+}

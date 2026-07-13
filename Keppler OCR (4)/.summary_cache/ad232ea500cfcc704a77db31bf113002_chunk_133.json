@@ -1,0 +1,257 @@
+{
+  "patient_identification": {
+    "patient_name": "John Doe",
+    "age": "50",
+    "sex": null,
+    "ip_no": "123456789",
+    "umr_no": null,
+    "address": null,
+    "guardian_name": null,
+    "contact_number": null,
+    "ward_bed": "3",
+    "department_unit": "ICU",
+    "treating_doctor": null,
+    "treating_nurse": null,
+    "admission_date": "2023-06-15",
+    "discharge_date": null,
+    "hospital_days": null,
+    "admission_type": {},
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": "Severe pain",
+    "working_diagnosis": null,
+    "final_diagnosis": [
+      {
+        "#": "1",
+        "Diagnosis": "Severe pain",
+        "ICD Code": null
+      }
+    ],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": "2023-06-15",
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": [
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Morphine",
+        "Dose": "2 mg",
+        "Route": "IV push"
+      },
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Fentanyl",
+        "Dose": "2 mcg/kg/hr PCA"
+      },
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Diazepam",
+        "Dose": "5 mg",
+        "Route": "IV push"
+      },
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Ketamine",
+        "Dose": "100 mg",
+        "Route": "IV push"
+      },
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Propofol",
+        "Dose": "100 mg",
+        "Route": "IV push"
+      },
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Midazolam",
+        "Dose": "2 mg",
+        "Route": "IV push"
+      },
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Ketorolac",
+        "Dose": "30 mg",
+        "Route": "IV push"
+      },
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Morphine",
+        "Dose": "2 mg",
+        "Route": "IV push"
+      },
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Fentanyl",
+        "Dose": "2 mcg/kg/hr PCA"
+      },
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Diazepam",
+        "Dose": "5 mg",
+        "Route": "IV push"
+      },
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Ketamine",
+        "Dose": "100 mg",
+        "Route": "IV push"
+      },
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Propofol",
+        "Dose": "100 mg",
+        "Route": "IV push"
+      },
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Midazolam",
+        "Dose": "2 mg",
+        "Route": "IV push"
+      },
+      {
+        "Date": "2023-06-15",
+        "Drug Name": "Ketorolac",
+        "Dose": "30 mg",
+        "Route": "IV push"
+      }
+    ]
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "BP": "120/80 mmHg",
+      "HR": "80 bpm",
+      "RR": "18 breaths/min",
+      "Temp": "37.5\u00b0C"
+    },
+    "mews_total": {
+      "value": 10,
+      "band": null
+    },
+    "investigations": []
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": 10,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": null,
+    "gastrointestinal": null,
+    "bowel": null,
+    "bladder": null,
+    "skin": null,
+    "sleeping_pattern": null,
+    "appetite": null,
+    "mode_of_intake": null,
+    "coping_mechanism": null,
+    "language_spoken": null,
+    "prior_medication_history": null
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": null,
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": "11",
+    "fields_captured": "11",
+    "fields_blank": "",
+    "low_confidence_fields": ""
+  }
+}

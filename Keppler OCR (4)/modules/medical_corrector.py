@@ -3,6 +3,8 @@ import logging
 import re
 from openai import AsyncOpenAI
 
+from core.config import settings
+
 logger = logging.getLogger(__name__)
 
 class MedicalCorrector:
@@ -11,9 +13,10 @@ class MedicalCorrector:
     Utilizes internal LLM knowledge of RxNorm, SNOMED, and DrugBank
     to detect and structurally correct medical terminology typos.
     """
-    def __init__(self, model_name="qwen2.5-vl-7b", base_url="http://localhost:8700/v1"):
+    def __init__(self, model_name="qwen2.5-vl-7b", base_url=None):
         self.model_name = model_name
-        self.client = AsyncOpenAI(base_url=base_url, api_key="EMPTY")
+        # Bounded timeout (SDK default is 600s) — see modules/region_ocr.py for why.
+        self.client = AsyncOpenAI(base_url=base_url or settings.VLLM_BASE_URL, api_key="EMPTY", timeout=90.0)
         
     async def correct_text(self, ocr_text: str) -> dict:
         """

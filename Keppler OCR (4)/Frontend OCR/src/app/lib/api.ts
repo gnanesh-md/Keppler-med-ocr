@@ -188,14 +188,22 @@ export const vaultApi = {
 
 // ─── AI Assistant (RAG chat) ────────────────────────────────────────────────
 
+export interface Citation {
+  doc_id: number;
+  filename: string;
+  page_label: string;
+  snippet: string;
+}
+
 export interface ChatMessage {
   role: string;
   content: string;
+  citations?: Citation[];
 }
 
 export const assistantApi = {
   chat: (message: string, sessionId: string, targetLanguage = "English") =>
-    post<{ role: string; content: string }>("/assistant/chat", {
+    post<{ role: string; content: string; citations: Citation[] }>("/assistant/chat", {
       message,
       session_id: sessionId,
       target_language: targetLanguage,
@@ -203,6 +211,51 @@ export const assistantApi = {
   history: (sessionId: string) => get<ChatMessage[]>(`/assistant/history?session_id=${encodeURIComponent(sessionId)}`),
   ingestText: (documents: string[]) => post<{ message: string }>("/assistant/ingest/text", { documents }),
   ingestVaultDocs: (docIds: number[]) => post<{ message: string }>("/assistant/ingest/vault", { doc_ids: docIds }),
+
+  // Streaming variant: POST + auth header, so EventSource (GET-only, no custom
+  // headers) doesn't work here — consume the SSE body via fetch + ReadableStream
+  // instead. Calls onCitations once, onToken per chunk, onDone at the end.
+  chatStream: async (
+    message: string,
+    sessionId: string,
+    handlers: { onCitations?: (c: Citation[]) => void; onToken?: (text: string) => void; onDone?: () => void; onError?: (msg: string) => void },
+    targetLanguage = "English"
+  ) => {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/assistant/chat/stream`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        "Bypass-Tunnel-Reminder": "true",
+      },
+      body: JSON.stringify({ message, session_id: sessionId, target_language: targetLanguage }),
+    });
+    if (!res.ok || !res.body) {
+      throw new ApiError(res.status, res.statusText || "Streaming request failed");
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const event = JSON.parse(line.slice(6));
+        if (event.type === "citations") handlers.onCitations?.(event.citations);
+        else if (event.type === "token") handlers.onToken?.(event.text);
+        else if (event.type === "error") handlers.onError?.(event.message);
+        else if (event.type === "done") handlers.onDone?.();
+      }
+    }
+  },
 };
 
 // ─── Dashboard ──────────────────────────────────────────────────────────────

@@ -1,0 +1,17 @@
+{
+  "patient_identification": {},
+  "diagnosis": {},
+  "allergies": {},
+  "procedure": {},
+  "medications": {},
+  "vitals_labs": {},
+  "risk_assessments": {},
+  "nursing_assessment": {},
+  "patient_education": {},
+  "fall_prevention": {},
+  "care_plan": {},
+  "clinical_course": {},
+  "handover": {},
+  "outcome": {},
+  "data_quality": {}
+}

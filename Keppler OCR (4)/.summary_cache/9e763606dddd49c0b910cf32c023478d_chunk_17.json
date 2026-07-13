@@ -1,0 +1,23 @@
+{
+  "patient_identification": {},
+  "diagnosis": {},
+  "allergies": {},
+  "procedure": {},
+  "medications": {},
+  "vitals_labs": {},
+  "risk_assessments": {},
+  "nursing_assessment": {},
+  "patient_education": {},
+  "fall_prevention": {
+    "applicable_risk_level": "Stage 1",
+    "interventions_applied": {
+      "Place bed in well-conditioned position": "checked",
+      "Use bed safety belt": "checked"
+    }
+  },
+  "care_plan": {},
+  "clinical_course": {},
+  "handover": {},
+  "outcome": {},
+  "data_quality": {}
+}

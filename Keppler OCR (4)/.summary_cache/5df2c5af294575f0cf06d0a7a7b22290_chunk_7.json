@@ -1,0 +1,262 @@
+{
+  "patient_identification": {
+    "patient_name": null,
+    "age": "35",
+    "sex": "Female",
+    "ip_no": "98765432",
+    "umr_no": "12345678",
+    "address": null,
+    "guardian_name": null,
+    "contact_number": "020-3456-7890",
+    "ward_bed": "2/10",
+    "department_unit": null,
+    "treating_doctor": null,
+    "treating_nurse": null,
+    "admission_date": null,
+    "discharge_date": null,
+    "hospital_days": null,
+    "admission_type": {},
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": "Back pain",
+    "working_diagnosis": null,
+    "final_diagnosis": [
+      {
+        "Diagnosis": "Douglas - Negative",
+        "ICD Code": null
+      },
+      {
+        "Diagnosis": "Clay - Hb: 11.8 g/dL",
+        "ICD Code": null
+      },
+      {
+        "Diagnosis": "TAC: 2.980",
+        "ICD Code": null
+      },
+      {
+        "Diagnosis": "P/Lc: +13 lactate",
+        "ICD Code": null
+      },
+      {
+        "Diagnosis": "Na-136.1",
+        "ICD Code": null
+      },
+      {
+        "Diagnosis": "K-4.0",
+        "ICD Code": null
+      },
+      {
+        "Diagnosis": "Ketones: trace",
+        "ICD Code": null
+      },
+      {
+        "Diagnosis": "Talc: 3.480-2.900",
+        "ICD Code": null
+      },
+      {
+        "Diagnosis": "GSR: 0.8 mm",
+        "ICD Code": null
+      }
+    ],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": "2023-04-15",
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": []
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "BP-140-80": null,
+      "PR-84": null,
+      "Resp-16": null,
+      "Temp-98.6\u00b0 F": null,
+      "Weight-155 lbs": null,
+      "Height-5'5\"": null
+    },
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": [
+      {
+        "Investigation": "Douglas - Negative",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Clay - Hb: 11.8 g/dL",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "TAC: 2.980",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "P/Lc: +13 lactate",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Na-136.1",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "K-4.0",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Ketones: trace",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Talc: 3.480-2.900",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      },
+      {
+        "Investigation": "GSR: 0.8 mm",
+        "Advised Date": null,
+        "Result": null,
+        "Reported Date": null
+      }
+    ]
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": null,
+    "gastrointestinal": null,
+    "bowel": null,
+    "bladder": null,
+    "skin": null,
+    "sleeping_pattern": null,
+    "appetite": null,
+    "mode_of_intake": null,
+    "coping_mechanism": null,
+    "language_spoken": null,
+    "prior_medication_history": null
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": null,
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": null,
+    "fields_captured": null,
+    "fields_blank": null,
+    "low_confidence_fields": null
+  }
+}

@@ -1,0 +1,242 @@
+{
+  "patient_identification": {
+    "patient_name": "John Doe",
+    "age": "1980-04-25",
+    "sex": "M",
+    "ip_no": "123456789",
+    "umr_no": null,
+    "address": "123 Main St, Anytown, USA",
+    "guardian_name": null,
+    "contact_number": null,
+    "ward_bed": null,
+    "department_unit": null,
+    "treating_doctor": null,
+    "treating_nurse": null,
+    "admission_date": "2023-05-01",
+    "discharge_date": "2023-05-05",
+    "hospital_days": "4",
+    "admission_type": {},
+    "government_employee": {},
+    "re_admitted": {},
+    "mlc": {},
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": "Chest pain, shortness of breath, nausea",
+    "working_diagnosis": "Coronary Artery Disease",
+    "final_diagnosis": [
+      {
+        "Diagnosis": "Coronary Artery Disease",
+        "ICD Code": null
+      }
+    ],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": "Coronary Angiography",
+    "operative_eye_site": "LAD",
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": null,
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": [
+      {
+        "Date": "qd",
+        "Drug Name": "Aspirin",
+        "Dose": "100mg",
+        "Route": "PO",
+        "Frequency": "qd"
+      },
+      {
+        "Date": "bid",
+        "Drug Name": "Clopidogrel",
+        "Dose": "75mg",
+        "Route": "PO",
+        "Frequency": "bid"
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Atorvastatin",
+        "Dose": "40mg",
+        "Route": "PO",
+        "Frequency": "qd"
+      },
+      {
+        "Date": "tid",
+        "Drug Name": "Metoprolol",
+        "Dose": "50mg",
+        "Route": "PO",
+        "Frequency": "tid"
+      }
+    ]
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "BP": "120/80 mmHg",
+      "HR": "72 bpm",
+      "RR": "18 breaths/min",
+      "Temp": "98.6\u00b0F"
+    },
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": [
+      {
+        "Investigation": "WBC",
+        "Advised Date": null,
+        "Result": "7.5 x 10^3 /\u00b5L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "RBC",
+        "Advised Date": null,
+        "Result": "4.5 x 10^6 /\u00b5L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Platelets",
+        "Advised Date": null,
+        "Result": "150 x 10^3 /\u00b5L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Creatinine",
+        "Advised Date": null,
+        "Result": "1.2 mg/dL",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "BUN",
+        "Advised Date": null,
+        "Result": "18 mg/dL",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "Na+",
+        "Advised Date": null,
+        "Result": "135 mEq/L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "K+",
+        "Advised Date": null,
+        "Result": "4.2 mEq/L",
+        "Reported Date": null
+      },
+      {
+        "Investigation": "CO2",
+        "Advised Date": null,
+        "Result": "24 mEq/L",
+        "Reported Date": null
+      }
+    ]
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": null,
+    "gastrointestinal": null,
+    "bowel": null,
+    "bladder": null,
+    "skin": null,
+    "sleeping_pattern": null,
+    "appetite": null,
+    "mode_of_intake": null,
+    "coping_mechanism": null,
+    "language_spoken": null,
+    "prior_medication_history": null
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": null,
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": null,
+    "discharge_advice": "Cardiology Follow-up in 1 week"
+  },
+  "data_quality": {
+    "pages_processed": null,
+    "fields_captured": null,
+    "fields_blank": null,
+    "low_confidence_fields": null
+  }
+}

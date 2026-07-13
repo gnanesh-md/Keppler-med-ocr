@@ -17,6 +17,12 @@ class RegionPrediction(BaseModel):
     dataset_source: Optional[str] = None
     resolution_confidence: float = 0.0
 
+    # Grounding fields (Phase 5) — every extracted field must be traceable to
+    # which OCR model actually read it and how confident that read was,
+    # separate from the medical/entity resolution confidence above.
+    ocr_confidence: float = 0.0
+    ocr_model_used: str = "unknown"
+
 class DocumentUploadResponse(BaseModel):
     """Response returned when a file is uploaded."""
     document_hash: str
@@ -126,9 +132,17 @@ class ChatRequest(BaseModel):
     target_language: str = "English"
 
 
+class Citation(BaseModel):
+    doc_id: int
+    filename: str
+    page_label: str
+    snippet: str
+
+
 class ChatResponse(BaseModel):
     role: str = "assistant"
     content: str
+    citations: List[Citation] = []
 
 
 class IngestTextRequest(BaseModel):

@@ -1,177 +1,210 @@
-import sqlite3
+"""
+User/vault/chat data access — backed by the unified Postgres schema in
+database/models.py (User, VaultDocument, ChatMessage). Function signatures are
+kept identical to the old raw-sqlite3 version so callers (api/routers/auth.py,
+vault.py, assistant.py, dashboard.py) don't need to change.
+"""
 import bcrypt
-import os
-import json
 
-# ABSOLUTE PATH FIX
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-DB_PATH = os.path.join(BASE_DIR, "database", "ai_portal.db")
+from database.models import AuditLog, ChatMessage, SessionLocal, User, VaultDocument
 
-def get_connection():
-    return sqlite3.connect(DB_PATH, check_same_thread=False)
 
 def initialize_extended_schema():
-    """SaaS Upgrade: Initializes tables and safely migrates older schemas."""
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    # 1. User Table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # --- SQLITE FIX: Safe Auto-Migration ---
-    cursor.execute("PRAGMA table_info(users)")
-    columns = [column[1] for column in cursor.fetchall()]
-    if 'created_at' not in columns:
-        # SQLite workaround: Add as NULL (constant), then backfill with current timestamp
-        cursor.execute("ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT NULL")
-        cursor.execute("UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL")
-    
-    # 2. Chat History Table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS chat_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            app_type TEXT,
-            session_id TEXT,
-            role TEXT,
-            content TEXT,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+    """No-op: schema is created/updated via `alembic upgrade head` (see alembic/)."""
+    pass
 
-    # 3. UNIVERSAL DOCUMENT VAULT
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS universal_docs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            filename TEXT,
-            doc_category TEXT,
-            raw_markdown TEXT,
-            json_metadata TEXT,
-            confidence_score FLOAT,
-            extraction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(user_id) REFERENCES users(id)
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
 
 def register_user(username, plain_password):
-    conn = get_connection()
-    cursor = conn.cursor()
-    hashed = bcrypt.hashpw(plain_password.encode('utf-8'), bcrypt.gensalt())
+    hashed = bcrypt.hashpw(plain_password.encode("utf-8"), bcrypt.gensalt())
+    db = SessionLocal()
     try:
-        # Explicitly passing CURRENT_TIMESTAMP to bypass any schema default issues
-        cursor.execute(
-            "INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)", 
-            (username, hashed.decode('utf-8'))
-        )
-        conn.commit()
+        if db.query(User).filter(User.username == username).first():
+            return False, "Username already exists."
+        db.add(User(username=username, password_hash=hashed.decode("utf-8")))
+        db.commit()
         return True, "Registration successful. Please log in."
-    except sqlite3.IntegrityError:
-        return False, "Username already exists."
     finally:
-        conn.close()
+        db.close()
+
 
 def verify_login(username, plain_password):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, password_hash FROM users WHERE username = ?", (username,))
-    result = cursor.fetchone()
-    conn.close()
-    if result:
-        user_id, hashed_password = result
-        if bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8')):
-            return True, user_id
-    return False, None
+    """Returns (ok, user_id, role). role is None when ok is False."""
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.username == username).first()
+        if user and bcrypt.checkpw(plain_password.encode("utf-8"), user.password_hash.encode("utf-8")):
+            return True, user.id, user.role
+        return False, None, None
+    finally:
+        db.close()
+
+
+def log_audit_event(user_id, action, resource_type=None, resource_id=None, ip_address=None, detail=None):
+    """Append-only audit trail (Phase 6) — who did what, when. Never raises:
+    a logging failure must not break the request it's auditing."""
+    db = SessionLocal()
+    try:
+        db.add(AuditLog(
+            user_id=user_id,
+            action=action,
+            resource_type=resource_type,
+            resource_id=str(resource_id) if resource_id is not None else None,
+            ip_address=ip_address,
+            detail=detail,
+        ))
+        db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
+
+def list_users():
+    """Admin-only read path (api/routers/admin.py)."""
+    db = SessionLocal()
+    try:
+        rows = db.query(User).order_by(User.id.asc()).all()
+        return [
+            {"id": u.id, "username": u.username, "role": u.role, "created_at": str(u.created_at)}
+            for u in rows
+        ]
+    finally:
+        db.close()
+
+
+def set_user_role(user_id, role):
+    """Admin-only write path (api/routers/admin.py). Returns True if the user existed."""
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return False
+        user.role = role
+        db.commit()
+        return True
+    finally:
+        db.close()
+
+
+def get_audit_log(limit=200, user_id=None, action=None):
+    """Admin-only read path (api/routers/admin.py)."""
+    db = SessionLocal()
+    try:
+        query = db.query(AuditLog)
+        if user_id is not None:
+            query = query.filter(AuditLog.user_id == user_id)
+        if action is not None:
+            query = query.filter(AuditLog.action == action)
+        rows = query.order_by(AuditLog.created_at.desc()).limit(limit).all()
+        return [
+            {
+                "id": r.id,
+                "user_id": r.user_id,
+                "action": r.action,
+                "resource_type": r.resource_type,
+                "resource_id": r.resource_id,
+                "ip_address": r.ip_address,
+                "detail": r.detail,
+                "created_at": str(r.created_at),
+            }
+            for r in rows
+        ]
+    finally:
+        db.close()
+
 
 def archive_document(user_id, filename, category, markdown, confidence, metadata={}):
-    """SaaS Feature: Saves OCR/RAG results permanently to the Vault. Returns the new row id."""
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO universal_docs (user_id, filename, doc_category, raw_markdown, confidence_score, json_metadata)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (user_id, filename, category, markdown, confidence, json.dumps(metadata)))
-    conn.commit()
-    new_id = cursor.lastrowid
-    conn.close()
-    return new_id
+    """Saves OCR/RAG results permanently to the Vault. Returns the new row id."""
+    db = SessionLocal()
+    try:
+        doc = VaultDocument(
+            user_id=user_id,
+            filename=filename,
+            doc_category=category,
+            raw_markdown=markdown,
+            confidence_score=confidence,
+            json_metadata=metadata,
+        )
+        db.add(doc)
+        db.commit()
+        db.refresh(doc)
+        return doc.id
+    finally:
+        db.close()
 
 
 def get_document_full(doc_id, user_id):
     """Retrieves the full archived record (markdown + parsed metadata) for the API's job-result endpoints."""
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT filename, doc_category, raw_markdown, json_metadata, confidence_score, extraction_date
-        FROM universal_docs WHERE id = ? AND user_id = ?
-    """, (doc_id, user_id))
-    result = cursor.fetchone()
-    conn.close()
-    if not result:
-        return None
-    filename, category, markdown, metadata_json, confidence, extraction_date = result
+    db = SessionLocal()
     try:
-        metadata = json.loads(metadata_json) if metadata_json else {}
-    except (TypeError, ValueError):
-        metadata = {}
-    return {
-        "filename": filename,
-        "doc_category": category,
-        "markdown": markdown,
-        "metadata": metadata,
-        "confidence_score": confidence,
-        "extraction_date": extraction_date,
-    }
+        doc = (
+            db.query(VaultDocument)
+            .filter(VaultDocument.id == doc_id, VaultDocument.user_id == user_id)
+            .first()
+        )
+        if not doc:
+            return None
+        return {
+            "filename": doc.filename,
+            "doc_category": doc.doc_category,
+            "markdown": doc.raw_markdown,
+            "metadata": doc.json_metadata or {},
+            "confidence_score": doc.confidence_score,
+            "extraction_date": doc.extraction_date,
+        }
+    finally:
+        db.close()
+
 
 def get_user_vault(user_id):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, filename, doc_category, confidence_score, extraction_date 
-        FROM universal_docs WHERE user_id = ? ORDER BY extraction_date DESC
-    """, (user_id,))
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
+    db = SessionLocal()
+    try:
+        rows = (
+            db.query(VaultDocument)
+            .filter(VaultDocument.user_id == user_id)
+            .order_by(VaultDocument.extraction_date.desc())
+            .all()
+        )
+        return [
+            (r.id, r.filename, r.doc_category, r.confidence_score, r.extraction_date)
+            for r in rows
+        ]
+    finally:
+        db.close()
+
 
 def get_document_markdown(doc_id, user_id):
     """Retrieves raw text for the Vault viewer."""
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT raw_markdown FROM universal_docs WHERE id = ? AND user_id = ?", (doc_id, user_id))
-    result = cursor.fetchone()
-    conn.close()
-    return result[0] if result else None
+    db = SessionLocal()
+    try:
+        doc = (
+            db.query(VaultDocument)
+            .filter(VaultDocument.id == doc_id, VaultDocument.user_id == user_id)
+            .first()
+        )
+        return doc.raw_markdown if doc else None
+    finally:
+        db.close()
+
 
 def save_chat_message(user_id, app_type, session_id, role, content):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO chat_history (user_id, app_type, session_id, role, content)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (user_id, app_type, session_id, role, content))
-    conn.commit()
-    conn.close()
+    db = SessionLocal()
+    try:
+        db.add(ChatMessage(user_id=user_id, app_type=app_type, session_id=session_id, role=role, content=content))
+        db.commit()
+    finally:
+        db.close()
+
 
 def get_chat_history(user_id, app_type, session_id=None):
-    conn = get_connection()
-    cursor = conn.cursor()
-    query = "SELECT role, content FROM chat_history WHERE user_id = ? AND app_type = ?"
-    params = [user_id, app_type]
-    if session_id:
-        query += " AND session_id = ?"
-        params.append(session_id)
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
-    conn.close()
-    return [{"role": r, "content": c} for r, c in rows]
+    db = SessionLocal()
+    try:
+        query = db.query(ChatMessage).filter(
+            ChatMessage.user_id == user_id, ChatMessage.app_type == app_type
+        )
+        if session_id:
+            query = query.filter(ChatMessage.session_id == session_id)
+        rows = query.order_by(ChatMessage.timestamp.asc()).all()
+        return [{"role": r.role, "content": r.content} for r in rows]
+    finally:
+        db.close()

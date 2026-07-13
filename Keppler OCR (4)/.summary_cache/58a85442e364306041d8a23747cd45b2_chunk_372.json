@@ -1,0 +1,128 @@
+{
+  "patient_identification": {
+    "patient_name": "N.K. V.S. Savani",
+    "age": "45",
+    "sex": "F",
+    "ip_no": "",
+    "umr_no": "",
+    "address": "",
+    "guardian_name": "",
+    "contact_number": "",
+    "ward_bed": "m/w Bed: 11",
+    "department_unit": "TRAUMA & EMERGENCY CRITICAL CARE",
+    "treating_doctor": "Dr. Ranjit Kumar",
+    "treating_nurse": "",
+    "admission_date": "28/02/26",
+    "discharge_date": "",
+    "hospital_days": "",
+    "admission_type": {},
+    "government_employee": {},
+    "re_admitted": {},
+    "mlc": {},
+    "blood_group": "O-"
+  },
+  "diagnosis": {
+    "presenting_complaint": "",
+    "working_diagnosis": "SDH, SAH, S/P Craniotomy",
+    "final_diagnosis": [
+      {
+        "#": "1",
+        "Diagnosis": "SDH",
+        "ICD Code": ""
+      },
+      {
+        "#": "2",
+        "Diagnosis": "SAH",
+        "ICD Code": ""
+      },
+      {
+        "#": "3",
+        "Diagnosis": "S/P Craniotomy",
+        "ICD Code": ""
+      }
+    ],
+    "secondary_diagnoses": ""
+  },
+  "allergies": {
+    "drug_allergy": {},
+    "food_allergy": {},
+    "blood_transfusion_allergy": {},
+    "other_allergies": "",
+    "high_alert_medication": {}
+  },
+  "procedure": {
+    "planned_procedure": "",
+    "operative_eye_site": "",
+    "iol_power": "",
+    "surgeon": "Dr. Toran",
+    "procedure_date": "28/02/26",
+    "preop_checklist": {},
+    "intra_op_complications": ""
+  },
+  "medications": {
+    "plan_of_care_change": "",
+    "medication_table": []
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {},
+    "mews_total": {},
+    "investigations": []
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {},
+    "pressure_sore_braden": {},
+    "pain_score": {},
+    "acuity_score": {}
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {},
+    "speech": {},
+    "adl_independent": {},
+    "respiration": "",
+    "gastrointestinal": "",
+    "bowel": "",
+    "bladder": "",
+    "skin": "",
+    "sleeping_pattern": "",
+    "appetite": "",
+    "mode_of_intake": "",
+    "coping_mechanism": "",
+    "language_spoken": "",
+    "prior_medication_history": ""
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": "",
+    "education_datetime": ""
+  },
+  "fall_prevention": {
+    "applicable_risk_level": "",
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": "",
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {},
+    "vitals_unstable": {},
+    "fall_risk_handover": "",
+    "skin_integrity_checked": {},
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": "",
+    "discharge_advice": ""
+  },
+  "data_quality": {
+    "pages_processed": "6",
+    "fields_captured": "",
+    "fields_blank": "",
+    "low_confidence_fields": ""
+  }
+}

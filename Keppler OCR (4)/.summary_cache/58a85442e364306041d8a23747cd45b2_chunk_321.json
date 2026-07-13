@@ -1,0 +1,270 @@
+{
+  "patient_identification": {
+    "patient_name": null,
+    "age": null,
+    "sex": null,
+    "ip_no": null,
+    "umr_no": null,
+    "address": null,
+    "guardian_name": null,
+    "contact_number": null,
+    "ward_bed": null,
+    "department_unit": null,
+    "treating_doctor": null,
+    "treating_nurse": null,
+    "admission_date": "[14/7/15]",
+    "discharge_date": null,
+    "hospital_days": null,
+    "admission_type": {},
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": null,
+    "working_diagnosis": null,
+    "final_diagnosis": [],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": null,
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": [
+      {
+        "Date": null,
+        "Drug Name": "Metformin",
+        "Dose": "500 mg",
+        "Route": null,
+        "Frequency": "BID"
+      },
+      {
+        "Date": null,
+        "Drug Name": "Rosiglitazone",
+        "Dose": "4 mg",
+        "Route": null,
+        "Frequency": "QD"
+      },
+      {
+        "Date": null,
+        "Drug Name": "Insulin",
+        "Dose": "10 units",
+        "Route": null,
+        "Frequency": "TID"
+      },
+      {
+        "Date": null,
+        "Drug Name": "Aspirin",
+        "Dose": "100 mg",
+        "Route": null,
+        "Frequency": "QD"
+      },
+      {
+        "Date": null,
+        "Drug Name": "Clopidogrel",
+        "Dose": "75 mg",
+        "Route": null,
+        "Frequency": "QD"
+      },
+      {
+        "Date": null,
+        "Drug Name": "Warfarin",
+        "Dose": "5 mg",
+        "Route": null,
+        "Frequency": "QD"
+      },
+      {
+        "Date": null,
+        "Drug Name": "Enalapril",
+        "Dose": "10 mg",
+        "Route": null,
+        "Frequency": "QD"
+      },
+      {
+        "Date": null,
+        "Drug Name": "Lisinopril",
+        "Dose": "10 mg",
+        "Route": null,
+        "Frequency": "QD"
+      },
+      {
+        "Date": null,
+        "Drug Name": "Amlodipine",
+        "Dose": "5 mg",
+        "Route": null,
+        "Frequency": "QD"
+      },
+      {
+        "Date": null,
+        "Drug Name": "Atorvastatin",
+        "Dose": "10 mg",
+        "Route": null,
+        "Frequency": "QD"
+      },
+      {
+        "Date": null,
+        "Drug Name": "Simvastatin",
+        "Dose": "40 mg",
+        "Route": null,
+        "Frequency": "QD"
+      },
+      {
+        "Date": null,
+        "Drug Name": "Pravastatin",
+        "Dose": "40 mg",
+        "Route": null,
+        "Frequency": "QD"
+      },
+      {
+        "Date": null,
+        "Drug Name": "Statins",
+        "Dose": "40 mg",
+        "Route": null,
+        "Frequency": "QD"
+      }
+    ]
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "TEMP": "98.6",
+      "BP": "120/72",
+      "HR": "72",
+      "RR": "12",
+      "SpO2": "98%",
+      "Urine": "Normal",
+      "ABG": "Normal",
+      "Chest X-ray": "Normal",
+      "ECG": "Normal",
+      "Labs": "Normal",
+      "IV Fluids": "Normal",
+      "Trend": "No Change",
+      "Medication": "No Change",
+      "Other": "No Change"
+    },
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": []
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": null,
+    "gastrointestinal": null,
+    "bowel": null,
+    "bladder": null,
+    "skin": null,
+    "sleeping_pattern": null,
+    "appetite": null,
+    "mode_of_intake": null,
+    "coping_mechanism": null,
+    "language_spoken": null,
+    "prior_medication_history": null
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": null,
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": null,
+    "fields_captured": null,
+    "fields_blank": null,
+    "low_confidence_fields": null
+  }
+}

@@ -1,0 +1,192 @@
+{
+  "patient_identification": {
+    "patient_name": "Tahihi",
+    "age": "37",
+    "sex": "Male",
+    "ip_no": "12",
+    "umr_no": null,
+    "address": null,
+    "guardian_name": null,
+    "contact_number": null,
+    "ward_bed": "58",
+    "department_unit": null,
+    "treating_doctor": null,
+    "treating_nurse": null,
+    "admission_date": null,
+    "discharge_date": null,
+    "hospital_days": null,
+    "admission_type": {},
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": null,
+    "working_diagnosis": null,
+    "final_diagnosis": [],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": null,
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": [
+      {
+        "Date": "28/12/2016",
+        "Drug Name": "Morphine",
+        "Dose": "1mg",
+        "Route": "IV",
+        "Frequency": null
+      },
+      {
+        "Date": "28/12/2016",
+        "Drug Name": "Diazepam",
+        "Dose": "2mg",
+        "Route": "IV",
+        "Frequency": null
+      }
+    ]
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "Temperature": "37.5\u00b0C",
+      "Respiratory Rate": "18 breaths/min",
+      "Heart Rate": "90 beats/min",
+      "Blood Pressure": "120/80 mmHg",
+      "Oxygen Saturation": "98%",
+      "Pulse Ox": "98%"
+    },
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": []
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": "mild tachypnea",
+    "gastrointestinal": null,
+    "bowel": null,
+    "bladder": null,
+    "skin": null,
+    "sleeping_pattern": null,
+    "appetite": null,
+    "mode_of_intake": null,
+    "coping_mechanism": null,
+    "language_spoken": null,
+    "prior_medication_history": null
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": "Patient is alert and oriented to person, place, and time. Patient is moderately confused. Patient is agitated and restless. Patient is experiencing mild hypotension. Patient is experiencing mild tachypnea.",
+    "shift_events": [
+      {
+        "Date": "28/12/2016",
+        "Time": "Morning",
+        "Event / Note": "Patient is alert and oriented to person, place, and time. Patient is moderately confused. Patient is agitated and restless. Patient is experiencing mild hypotension. Patient is experiencing mild tachypnea.",
+        "Recorded By": "Tahihi"
+      }
+    ]
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": null,
+    "fields_captured": null,
+    "fields_blank": null,
+    "low_confidence_fields": null
+  }
+}

@@ -2,6 +2,8 @@ import json
 import logging
 from openai import OpenAI
 
+from core.config import settings
+
 logger = logging.getLogger(__name__)
 
 class HierarchicalSummarizer:
@@ -9,9 +11,10 @@ class HierarchicalSummarizer:
     Executes the Map-Reduce summarization strategy.
     Maps extraction prompts across all chunks and reduces them into a single structured schema.
     """
-    def __init__(self, model_name: str = "qwen2.5-vl-7b", base_url: str = "http://localhost:8700/v1"):
+    def __init__(self, model_name: str = "qwen2.5-vl-7b", base_url: str = None):
         self.model_name = model_name
-        self.client = OpenAI(base_url=base_url, api_key="EMPTY")
+        # Bounded timeout (SDK default is 600s) — see modules/region_ocr.py for why.
+        self.client = OpenAI(base_url=base_url or settings.VLLM_BASE_URL, api_key="EMPTY", timeout=120.0)
         
     def _extract_chunk_data(self, chunk_text: str) -> dict:
         from .blueprint_summary import load_blueprint, build_extraction_prompt

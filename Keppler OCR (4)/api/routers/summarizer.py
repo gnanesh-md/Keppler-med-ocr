@@ -1,23 +1,26 @@
 import hashlib
 import os
 import uuid
-from datetime import datetime
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 
 from core.config import settings
+from core.encryption import write_encrypted_upload
+from core.rate_limit import limiter
 from core.security import CurrentUser, get_current_user
-from database.db_utils import archive_document, get_document_full
+from database.db_utils import get_document_full, log_audit_event
 from database.models import Document, ExtractionJob, SessionLocal
-from modules.pdf_summarizer import generate_summary_docx, generate_summary_pdf, run_summary_pipeline
+from modules.pdf_summarizer import generate_summary_docx, generate_summary_pdf
+from workers.celery_app import run_summary_job
 
 router = APIRouter(prefix="/api/v1/summarizer", tags=["summarizer"])
 
 
 @router.post("/upload")
+@limiter.limit("20/minute")
 async def upload(
-    background_tasks: BackgroundTasks,
+    request: Request,
     file: UploadFile = File(...),
     current_user: CurrentUser = Depends(get_current_user),
 ):
@@ -25,8 +28,7 @@ async def upload(
     doc_hash = hashlib.md5(contents).hexdigest()
     file_path = os.path.join(settings.UPLOAD_DIR, f"{doc_hash}_{file.filename}")
     if not os.path.exists(file_path):
-        with open(file_path, "wb") as f:
-            f.write(contents)
+        write_encrypted_upload(file_path, contents)
 
     db = SessionLocal()
     try:
@@ -49,62 +51,15 @@ async def upload(
     finally:
         db.close()
 
-    background_tasks.add_task(_run_summary_job, job_id, file_path, file.filename, current_user.user_id)
+    run_summary_job.delay(job_id)
+    log_audit_event(current_user.user_id, "summarizer.upload", "document", doc_hash, request.client.host,
+                     {"filename": file.filename, "job_id": job_id})
 
     return {
         "document_hash": doc_hash,
         "job_id": job_id,
         "message": "Document accepted and queued for summarization.",
     }
-
-
-def _run_summary_job(job_id: str, file_path: str, filename: str, user_id: int):
-    db = SessionLocal()
-    try:
-        job = db.query(ExtractionJob).filter(ExtractionJob.job_id == job_id).first()
-        job.status = "PROCESSING"
-        db.commit()
-
-        def progress_cb(pct: float):
-            db2 = SessionLocal()
-            try:
-                j = db2.query(ExtractionJob).filter(ExtractionJob.job_id == job_id).first()
-                j.progress = round(pct * 100, 1)
-                db2.commit()
-            finally:
-                db2.close()
-
-        with open(file_path, "rb") as f:
-            pdf_bytes = f.read()
-
-        result = run_summary_pipeline(pdf_bytes, filename=filename, progress_cb=progress_cb)
-
-        name, ip_no, doctor, nurse = result["patient_meta"]
-        vault_id = archive_document(
-            user_id=user_id,
-            filename=filename,
-            category="PDF Summary",
-            markdown=result["summary_md"],
-            confidence=99.0,
-            metadata={
-                "page_texts": {str(k): v for k, v in result["page_texts"].items()},
-                "patient_meta": {"name": name, "ip_no": ip_no, "doctor": doctor, "nurse": nurse},
-            },
-        )
-
-        job.result_doc_id = vault_id
-        job.status = "COMPLETED"
-        job.progress = 100.0
-        job.completed_at = datetime.utcnow()
-        db.commit()
-    except Exception as e:
-        job = db.query(ExtractionJob).filter(ExtractionJob.job_id == job_id).first()
-        if job:
-            job.status = "FAILED"
-            job.error_message = str(e)
-            db.commit()
-    finally:
-        db.close()
 
 
 def _get_owned_job(db, job_id: str, user_id: int) -> ExtractionJob:
@@ -173,6 +128,8 @@ async def export(
     doc = get_document_full(result_doc_id, current_user.user_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Result document not found.")
+
+    log_audit_event(current_user.user_id, "summarizer.export", "job", job_id, detail={"format": format})
 
     summary_md = doc["markdown"]
     meta = doc["metadata"].get("patient_meta", {})

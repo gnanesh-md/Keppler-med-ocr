@@ -1,0 +1,204 @@
+{
+  "patient_identification": {
+    "patient_name": "Nathan",
+    "age": "23",
+    "sex": "Male",
+    "ip_no": null,
+    "umr_no": null,
+    "address": "123 Main St, Anytown, USA",
+    "guardian_name": "John Doe",
+    "contact_number": "555-123-4567",
+    "ward_bed": "405 / 12",
+    "department_unit": null,
+    "treating_doctor": "Dr. Smith",
+    "treating_nurse": null,
+    "admission_date": "8/23/23",
+    "discharge_date": null,
+    "hospital_days": null,
+    "admission_type": {
+      "Routine Admission": "unchecked",
+      "Routine Discharge": "unchecked",
+      "Emergency Admission": "unchecked",
+      "Emergency Discharge": "unchecked",
+      "Transfer Admission": "unchecked",
+      "Transfer Discharge": "unchecked",
+      "Other Admission": "unchecked",
+      "Other Discharge": "unchecked",
+      "Transfer In": "unchecked",
+      "Transfer Out": "unchecked",
+      "Other": "unchecked",
+      "None": "checked"
+    },
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": null,
+    "working_diagnosis": null,
+    "final_diagnosis": [],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": null,
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": [
+      {
+        "Date": "Not Specified",
+        "Drug Name": "Metformin",
+        "Dose": "500 mg",
+        "Route": "PO",
+        "Frequency": "qd"
+      },
+      {
+        "Date": "Not Specified",
+        "Drug Name": "Rosuvastatin",
+        "Dose": "10 mg",
+        "Route": "PO",
+        "Frequency": "qd"
+      },
+      {
+        "Date": "Not Specified",
+        "Drug Name": "Aspirin",
+        "Dose": "100 mg",
+        "Route": "PO",
+        "Frequency": "qd"
+      }
+    ]
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "BP": "120/80 mmHg",
+      "HR": "72 bpm",
+      "RR": "16 breaths/min",
+      "Temp": "98.6\u00b0F",
+      "SpO2": "98%"
+    },
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": []
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": "Not Specified",
+    "gastrointestinal": "Not Specified",
+    "bowel": "Not Specified",
+    "bladder": "Not Specified",
+    "skin": "Not Specified",
+    "sleeping_pattern": "Not Specified",
+    "appetite": "Not Specified",
+    "mode_of_intake": "Not Specified",
+    "coping_mechanism": "Not Specified",
+    "language_spoken": "English",
+    "prior_medication_history": "Metformin, Rosuvastatin, Aspirin"
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": "To review this patient's progress. - PT to continue inpatient.",
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": "1",
+    "fields_captured": "14",
+    "fields_blank": "0",
+    "low_confidence_fields": "0"
+  }
+}

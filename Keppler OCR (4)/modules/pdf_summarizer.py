@@ -19,15 +19,21 @@ from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import concurrent.futures
+
+from core.config import settings
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 OCR_MODEL     = "qwen2.5-vl-7b"   # vision model for reading scanned pages
 SUMMARY_MODEL = "qwen2.5-vl-7b"   # text model for summarising
-MAX_IMG_DIM   = 512              # Reduced resolution for faster extraction
-JPEG_QUALITY  = 75
+MAX_IMG_DIM   = 1280              # Increased resolution for higher OCR accuracy
+JPEG_QUALITY  = 85
 
-client = OpenAI(base_url="http://localhost:8700/v1", api_key="EMPTY")
+# Bounded timeout (SDK default is 600s) — see modules/region_ocr.py for why.
+# Longer than the OCR-region clients (90s): chunk summarization generates more
+# tokens per call. settings.VLLM_BASE_URL, not a hardcoded "localhost:8700" —
+# see modules/precision_ocr.py's comment for why that was a real bug.
+client = OpenAI(base_url=settings.VLLM_BASE_URL, api_key="EMPTY", timeout=120.0)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STEP 1 — Extract text from each PDF page using vision model
@@ -382,24 +388,40 @@ def run_summary_pipeline(pdf_bytes: bytes, filename: str = "document.pdf", progr
     total_pages = len(doc)
 
     images_to_process = {}
+    page_texts = {}
+    
     for i in range(total_pages):
         page = doc[i]
-        images_to_process[i + 1] = _page_to_image_bytes(page)
+        
+        # 🚀 1. FAST PATH: Attempt native digital extraction first
+        # This is instantaneous and 100% accurate for digital/native PDFs.
+        native_text = page.get_text().strip()
+        
+        # Heuristic: If we got substantial text (> 100 chars), assume it's digital
+        if len(native_text) > 100:
+            page_texts[i + 1] = native_text
+        else:
+            # 🐢 2. SLOW PATH: Fallback to Vision Model OCR for scanned images
+            images_to_process[i + 1] = _page_to_image_bytes(page)
     doc.close()
 
-    page_texts = {}
-    completed = 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {
-            executor.submit(extract_page_text, img_bytes, pg_num): pg_num
-            for pg_num, img_bytes in images_to_process.items()
-        }
-        for future in concurrent.futures.as_completed(futures):
-            pg_num = futures[future]
-            page_texts[pg_num] = future.result()
-            completed += 1
-            if progress_cb:
-                progress_cb(0.5 * completed / total_pages)
+    completed = len(page_texts)
+    
+    if images_to_process:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            futures = {
+                executor.submit(extract_page_text, img_bytes, pg_num): pg_num
+                for pg_num, img_bytes in images_to_process.items()
+            }
+            for future in concurrent.futures.as_completed(futures):
+                pg_num = futures[future]
+                page_texts[pg_num] = future.result()
+                completed += 1
+                if progress_cb:
+                    progress_cb(0.5 * completed / total_pages)
+    else:
+        if progress_cb:
+            progress_cb(0.5)
 
     page_strings = [page_texts[pg] for pg in sorted(page_texts.keys())]
 

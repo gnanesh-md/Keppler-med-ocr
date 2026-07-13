@@ -1,0 +1,228 @@
+{
+  "patient_identification": {
+    "patient_name": "Mr.Naimullah",
+    "age": null,
+    "sex": null,
+    "ip_no": null,
+    "umr_no": null,
+    "address": null,
+    "guardian_name": null,
+    "contact_number": null,
+    "ward_bed": null,
+    "department_unit": null,
+    "treating_doctor": "Dr.Mallikajri Rso",
+    "treating_nurse": "Sudha / Rashed",
+    "admission_date": "22/2/20",
+    "discharge_date": null,
+    "hospital_days": null,
+    "admission_type": {
+      "Emergency Transfusion": "checked"
+    },
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": null,
+    "working_diagnosis": null,
+    "final_diagnosis": [
+      {
+        "Diagnosis": "Emergency Transfusion",
+        "ICD Code": null
+      }
+    ],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": "Dr.Kavi",
+    "procedure_date": "22/2/20",
+    "preop_checklist": {
+      "Anxiety": "checked",
+      "Mask": "checked",
+      "LMA": "checked",
+      "ET Tube": "checked"
+    },
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": [
+      {
+        "Date": "22/2/20",
+        "Drug Name": "IV Sedation",
+        "Dose": "1",
+        "Route": "I.V.",
+        "Frequency": null
+      },
+      {
+        "Date": "22/2/20",
+        "Drug Name": "MAC",
+        "Dose": "2",
+        "Route": null,
+        "Frequency": null
+      }
+    ]
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "HR": "64c",
+      "S.P.": "200/110-9",
+      "SPO2": "96%",
+      "RR": "20/30"
+    },
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": []
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {
+      "Received Patient As": "checked"
+    },
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {
+      "Anxiety": "checked",
+      "Mask": "checked",
+      "LMA": "checked",
+      "ET Tube": "checked"
+    },
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": "500c",
+    "gastrointestinal": null,
+    "bowel": null,
+    "bladder": null,
+    "skin": null,
+    "sleeping_pattern": null,
+    "appetite": null,
+    "mode_of_intake": null,
+    "coping_mechanism": null,
+    "language_spoken": null,
+    "prior_medication_history": null
+  },
+  "patient_education": {
+    "education_items": {
+      "Education Provided": "checked"
+    },
+    "educated_by": "Sudha / Rashed",
+    "education_datetime": "22/2/20 9:00PM"
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {
+      "Anxiety": "checked",
+      "Mask": "checked",
+      "LMA": "checked",
+      "ET Tube": "checked"
+    }
+  },
+  "care_plan": {
+    "care_plan_table": [
+      {
+        "Assessment / Focus": "Emergency Transfusion",
+        "Diagnosis": "Emergency Transfusion",
+        "Intervention": "Emergency Transfusion",
+        "Rationale": "Emergency Transfusion",
+        "Evaluation": null
+      }
+    ]
+  },
+  "clinical_course": {
+    "course_narrative": null,
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": [
+      {
+        "Shifted From": null,
+        "Shifted To": null,
+        "Handed Over By": null,
+        "Taken Over By": null,
+        "Date": null,
+        "Time": null
+      }
+    ]
+  },
+  "outcome": {
+    "result": {
+      "Emergency Transfusion": "checked"
+    },
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": "158",
+    "fields_captured": "6",
+    "fields_blank": null,
+    "low_confidence_fields": null
+  }
+}

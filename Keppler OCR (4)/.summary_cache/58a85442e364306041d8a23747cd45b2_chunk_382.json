@@ -1,0 +1,237 @@
+{
+  "patient_identification": {
+    "patient_name": "M.V. Sebastian",
+    "age": "37",
+    "sex": "Male",
+    "ip_no": "0123",
+    "umr_no": null,
+    "address": null,
+    "guardian_name": null,
+    "contact_number": null,
+    "ward_bed": "11",
+    "department_unit": "ICU",
+    "treating_doctor": null,
+    "treating_nurse": null,
+    "admission_date": "04/05/24",
+    "discharge_date": null,
+    "hospital_days": null,
+    "admission_type": {},
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": null,
+    "working_diagnosis": null,
+    "final_diagnosis": [],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": "04/05/24",
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": [
+      {
+        "Date": "qd",
+        "Drug Name": "Metformin",
+        "Dose": "500 mg",
+        "Route": "PO"
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Insulin",
+        "Dose": "10 units",
+        "Route": "IM"
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Aspirin",
+        "Dose": "100 mg",
+        "Route": "PO"
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Clopidogrel",
+        "Dose": "75 mg",
+        "Route": "PO"
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Warfarin",
+        "Dose": "5 mg",
+        "Route": "PO"
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Dexamethasone",
+        "Dose": "4 mg",
+        "Route": "IV"
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Ciprofloxacin",
+        "Dose": "500 mg",
+        "Route": "IV"
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Pantoprazole",
+        "Dose": "40 mg",
+        "Route": "IV"
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Omeprazole",
+        "Dose": "20 mg",
+        "Route": "IV"
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Ranitidine",
+        "Dose": "50 mg",
+        "Route": "IV"
+      },
+      {
+        "Date": "qd",
+        "Drug Name": "Famotidine",
+        "Dose": "20 mg",
+        "Route": "IV"
+      }
+    ]
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "Temperature": "98.6\u00b0F",
+      "Heart Rate": "72 bpm",
+      "Respiratory Rate": "12 breaths/min",
+      "Blood Pressure": "120/80 mmHg",
+      "Oxygen Saturation": "98%",
+      "Pulse Oximeter Reading": "98%"
+    },
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": []
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": null,
+    "gastrointestinal": null,
+    "bowel": null,
+    "bladder": null,
+    "skin": null,
+    "sleeping_pattern": null,
+    "appetite": null,
+    "mode_of_intake": null,
+    "coping_mechanism": null,
+    "language_spoken": null,
+    "prior_medication_history": null
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": null,
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": null,
+    "fields_captured": null,
+    "fields_blank": null,
+    "low_confidence_fields": null
+  }
+}

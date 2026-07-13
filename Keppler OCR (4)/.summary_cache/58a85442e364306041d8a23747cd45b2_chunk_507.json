@@ -1,0 +1,176 @@
+{
+  "patient_identification": {
+    "patient_name": "Mr. SUBHARANYA SARMA V",
+    "age": "78(Y)",
+    "sex": "Male",
+    "ip_no": "IP25020137",
+    "umr_no": "UMR000109",
+    "address": "Mungi Chandra Realty Circle, Golden Mile Rd Anakay, 500175",
+    "guardian_name": null,
+    "contact_number": "9111006805 / 04222100000",
+    "ward_bed": "MICU",
+    "department_unit": "CASH",
+    "treating_doctor": "Dr DR RAVI KUMAR MAHINDLA",
+    "treating_nurse": null,
+    "admission_date": null,
+    "discharge_date": null,
+    "hospital_days": null,
+    "admission_type": {},
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": null,
+    "working_diagnosis": null,
+    "final_diagnosis": [],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": null,
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": []
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "Hemoglobin": "7.4 gm%",
+      "WBC Count": "11080 x10^3/\u00b5l",
+      "RBC": "2.44 x10^12/\u00b5l",
+      "PCV": "21.9 %",
+      "Platelet Count": "1.5 x10^3/\u00b5l"
+    },
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": [
+      {
+        "Investigation": "CBC(COMPLET BLOOD PICTURE)",
+        "Advised Date": "19-Mar-2026 08:03 AM",
+        "Result": "Hemoglobin: 7.4 gm%; WBC Count: 11080 x10^3/\u00b5l; RBC: 2.44 x10^12/\u00b5l; PCV: 21.9 %; Platelet Count: 1.5 x10^3/\u00b5l",
+        "Reported Date": "19-Mar-2026 09:51 AM"
+      }
+    ]
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": null,
+    "gastrointestinal": null,
+    "bowel": null,
+    "bladder": null,
+    "skin": null,
+    "sleeping_pattern": null,
+    "appetite": null,
+    "mode_of_intake": null,
+    "coping_mechanism": null,
+    "language_spoken": null,
+    "prior_medication_history": null
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": null,
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": null,
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": "2",
+    "fields_captured": "14",
+    "fields_blank": "0",
+    "low_confidence_fields": "0"
+  }
+}

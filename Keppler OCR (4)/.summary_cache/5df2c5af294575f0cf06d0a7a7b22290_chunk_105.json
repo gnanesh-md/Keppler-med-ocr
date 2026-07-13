@@ -1,0 +1,42 @@
+{
+  "patient_identification": {},
+  "diagnosis": {},
+  "allergies": {},
+  "procedure": {},
+  "medications": {},
+  "vitals_labs": {},
+  "risk_assessments": {},
+  "nursing_assessment": {},
+  "patient_education": {},
+  "fall_prevention": {},
+  "care_plan": {},
+  "clinical_course": {
+    "course_narrative": "",
+    "shift_events": [
+      {
+        "Date": "2023-04-15",
+        "Time": "18:00",
+        "Event / Note": "-Care hand Over taken from Sister Indrani 8:00\n-Assessed the general Condition of the pt.\n-Monitored vital's (4 recorded)\n-Tvr fluids NS 4 DNS loaded Iv on Plane.\n-Administered medication as per doctor order.\n-All lab report collected\n-Care hand Over given to Night Duty Staff",
+        "Recorded By": ""
+      }
+    ]
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": "",
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {},
+  "data_quality": {}
+}

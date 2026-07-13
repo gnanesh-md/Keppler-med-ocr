@@ -1,0 +1,166 @@
+{
+  "patient_identification": {
+    "patient_name": "Nani Uthra",
+    "age": "70",
+    "sex": "F",
+    "ip_no": "IP/35023189",
+    "umr_no": "14000031403",
+    "address": "Golden Mile Road, Rajpur, Bhopal, Madhya Pradesh 462005",
+    "guardian_name": null,
+    "contact_number": "+91-755-266-2222",
+    "ward_bed": null,
+    "department_unit": null,
+    "treating_doctor": "Dr. S.K. RAY KUNJAR MANISHA",
+    "treating_nurse": null,
+    "admission_date": "12",
+    "discharge_date": null,
+    "hospital_days": null,
+    "admission_type": {
+      "state": "not_recorded"
+    },
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": null
+  },
+  "diagnosis": {
+    "presenting_complaint": null,
+    "working_diagnosis": null,
+    "final_diagnosis": [],
+    "secondary_diagnoses": null
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": null,
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": null,
+    "operative_eye_site": null,
+    "iol_power": null,
+    "surgeon": null,
+    "procedure_date": null,
+    "preop_checklist": {},
+    "intra_op_complications": null
+  },
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": []
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {
+      "Temp": "99\u00b0F",
+      "Pulse": "100",
+      "Resp": "16",
+      "BP": "120/80",
+      "SpO2": "98%"
+    },
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": []
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded"
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded"
+    },
+    "respiration": "",
+    "gastrointestinal": "",
+    "bowel": "",
+    "bladder": "",
+    "skin": "",
+    "sleeping_pattern": "",
+    "appetite": "",
+    "mode_of_intake": "",
+    "coping_mechanism": "",
+    "language_spoken": "",
+    "prior_medication_history": ""
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": null,
+    "education_datetime": null
+  },
+  "fall_prevention": {
+    "applicable_risk_level": null,
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": null,
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded"
+    },
+    "vitals_unstable": {
+      "state": "not_recorded"
+    },
+    "fall_risk_handover": "",
+    "skin_integrity_checked": {
+      "state": "not_recorded"
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": null,
+    "discharge_advice": null
+  },
+  "data_quality": {
+    "pages_processed": "1",
+    "fields_captured": null,
+    "fields_blank": null,
+    "low_confidence_fields": null
+  }
+}

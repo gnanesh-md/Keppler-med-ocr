@@ -1,0 +1,77 @@
+{
+  "medications": {
+    "plan_of_care_change": null,
+    "medication_table": [
+      {
+        "Date": "10/02/21",
+        "Drug Name": "INT - ZOPICLOR",
+        "Dose": "TID",
+        "Route": "IV",
+        "Frequency": "TID"
+      },
+      {
+        "Date": "10/02/21",
+        "Drug Name": "PAN INFUSION",
+        "Dose": "BD",
+        "Route": "IV",
+        "Frequency": "BD"
+      },
+      {
+        "Date": "10/02/21",
+        "Drug Name": "INJ - UNIVAX-S",
+        "Dose": "BD",
+        "Route": "IV",
+        "Frequency": "BD"
+      },
+      {
+        "Date": "10/02/21",
+        "Drug Name": "INJ - BROWAC",
+        "Dose": "BD",
+        "Route": "IV",
+        "Frequency": "BD"
+      },
+      {
+        "Date": "10/02/21",
+        "Drug Name": "INJ - PERINFIRM",
+        "Dose": "BD",
+        "Route": "IV",
+        "Frequency": "BD"
+      },
+      {
+        "Date": "10/02/21",
+        "Drug Name": "Tab - Re Styral",
+        "Dose": "QD",
+        "Route": "PO",
+        "Frequency": "QD"
+      },
+      {
+        "Date": "10/02/21",
+        "Drug Name": "Tab - Stabazolum",
+        "Dose": "QD",
+        "Route": "PO",
+        "Frequency": "QD"
+      },
+      {
+        "Date": "10/02/21",
+        "Drug Name": "INF. DNS - ISOMILOHA",
+        "Dose": "QD",
+        "Route": "IV",
+        "Frequency": "QD"
+      },
+      {
+        "Date": "10/02/21",
+        "Drug Name": "Sup Infusion",
+        "Dose": "QD",
+        "Route": "IV",
+        "Frequency": "QD"
+      },
+      {
+        "Date": "10/02/21",
+        "Drug Name": "INJ Paracetamol",
+        "Dose": "QD",
+        "Route": "IV",
+        "Frequency": "QD"
+      }
+    ]
+  }
+}

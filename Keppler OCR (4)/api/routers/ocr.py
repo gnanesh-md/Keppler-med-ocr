@@ -1,15 +1,15 @@
 import hashlib
 import os
 import uuid
-from datetime import datetime
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import Response, FileResponse
-from PIL import Image
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import Response
 
 from core.config import settings
+from core.encryption import read_encrypted_upload, write_encrypted_upload
+from core.rate_limit import limiter
 from core.security import CurrentUser, get_current_user
-from database.db_utils import archive_document, get_document_full
+from database.db_utils import get_document_full, log_audit_event
 from database.models import Document, ExtractionJob, SessionLocal
 from modules.precision_ocr import (
     BLUEPRINTS,
@@ -17,9 +17,8 @@ from modules.precision_ocr import (
     generate_excel,
     generate_json,
     generate_pro_pdf,
-    load_pdf_pages,
-    run_ocr_pipeline,
 )
+from workers.celery_app import run_ocr_job
 
 router = APIRouter(prefix="/api/v1/ocr", tags=["ocr"])
 
@@ -30,8 +29,9 @@ async def blueprints():
 
 
 @router.post("/upload")
+@limiter.limit("20/minute")
 async def upload(
-    background_tasks: BackgroundTasks,
+    request: Request,
     file: UploadFile = File(...),
     client_blueprint: str = Form("Universal OCR (Any Text)"),
     current_user: CurrentUser = Depends(get_current_user),
@@ -40,8 +40,7 @@ async def upload(
     doc_hash = hashlib.md5(contents).hexdigest()
     file_path = os.path.join(settings.UPLOAD_DIR, f"{doc_hash}_{file.filename}")
     if not os.path.exists(file_path):
-        with open(file_path, "wb") as f:
-            f.write(contents)
+        write_encrypted_upload(file_path, contents)
 
     db = SessionLocal()
     try:
@@ -58,72 +57,22 @@ async def upload(
             user_id=current_user.user_id,
             job_type="ocr",
             status="PENDING",
+            blueprint=client_blueprint,
         )
         db.add(job)
         db.commit()
     finally:
         db.close()
 
-    background_tasks.add_task(
-        _run_ocr_job, job_id, file_path, file.filename, client_blueprint, current_user.user_id
-    )
+    run_ocr_job.delay(job_id)
+    log_audit_event(current_user.user_id, "ocr.upload", "document", doc_hash, request.client.host,
+                     {"filename": file.filename, "job_id": job_id})
 
     return {
         "document_hash": doc_hash,
         "job_id": job_id,
         "message": "Document accepted and queued for extraction.",
     }
-
-
-def _run_ocr_job(job_id: str, file_path: str, filename: str, client_blueprint: str, user_id: int):
-    db = SessionLocal()
-    try:
-        job = db.query(ExtractionJob).filter(ExtractionJob.job_id == job_id).first()
-        job.status = "PROCESSING"
-        db.commit()
-
-        def progress_cb(pct: float):
-            db2 = SessionLocal()
-            try:
-                j = db2.query(ExtractionJob).filter(ExtractionJob.job_id == job_id).first()
-                j.progress = round(pct * 100, 1)
-                db2.commit()
-            finally:
-                db2.close()
-
-        if filename.lower().endswith(".pdf"):
-            with open(file_path, "rb") as f:
-                pages = load_pdf_pages(f.read())
-        else:
-            pages = [Image.open(file_path)]
-
-        result = run_ocr_pipeline(pages, client_blueprint, progress_cb=progress_cb)
-
-        vault_id = archive_document(
-            user_id=user_id,
-            filename=filename,
-            category=client_blueprint,
-            markdown=result["combined"],
-            confidence=99.0,
-            metadata={
-                "predictions": result["predictions"],
-                "pages": [{"label": lbl, "text": txt} for lbl, txt in result["pages"]],
-            },
-        )
-
-        job.result_doc_id = vault_id
-        job.status = "COMPLETED"
-        job.progress = 100.0
-        job.completed_at = datetime.utcnow()
-        db.commit()
-    except Exception as e:
-        job = db.query(ExtractionJob).filter(ExtractionJob.job_id == job_id).first()
-        if job:
-            job.status = "FAILED"
-            job.error_message = str(e)
-            db.commit()
-    finally:
-        db.close()
 
 
 def _get_owned_job(db, job_id: str, user_id: int) -> ExtractionJob:
@@ -189,12 +138,14 @@ async def job_original(job_id: str, current_user: CurrentUser = Depends(get_curr
         doc = db.query(Document).filter(Document.id == job.document_id).first()
         if not doc or not doc.upload_path or not os.path.exists(doc.upload_path):
             raise HTTPException(status_code=404, detail="Original document not found.")
-        
+
         ext = os.path.splitext(doc.filename)[1].lower()
         media_type = "application/pdf" if ext == ".pdf" else "image/jpeg"
         if ext == ".png": media_type = "image/png"
-        
-        return FileResponse(doc.upload_path, media_type=media_type)
+
+        # Encrypted at rest (core/encryption.py) — decrypt before serving;
+        # can't use FileResponse (streams the raw, still-encrypted file).
+        return Response(content=read_encrypted_upload(doc.upload_path), media_type=media_type)
     finally:
         db.close()
 
@@ -216,6 +167,8 @@ async def export(
     doc = get_document_full(result_doc_id, current_user.user_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Result document not found.")
+
+    log_audit_event(current_user.user_id, "ocr.export", "job", job_id, detail={"format": format})
 
     combined = doc["markdown"]
     client_name = doc["doc_category"] or "Universal OCR"
