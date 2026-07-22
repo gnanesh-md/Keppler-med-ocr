@@ -1,0 +1,12 @@
+nohup: ignoring input
+
+  VITE v6.3.5  ready in 151 ms
+
+  ➜  Local:   http://localhost:5174/
+  ➜  Network: http://192.168.1.100:5174/
+  ➜  Network: http://10.0.1.1:5174/
+  ➜  Network: http://10.0.8.1:5174/
+  ➜  Network: http://10.0.0.1:5174/
+  ➜  Network: http://10.0.2.1:5174/
+  ➜  Network: http://10.0.5.1:5174/
+  ➜  Network: http://10.0.6.1:5174/

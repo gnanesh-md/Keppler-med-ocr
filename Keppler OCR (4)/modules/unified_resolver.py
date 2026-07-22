@@ -150,7 +150,11 @@ def resolve_entities_in_text(text: str):
                     if labels and scores[0] > 0.55:
                         info = LOOKUP.get(labels[0], {})
                         if info:
-                            cell = f" {c_str} {format_annotation(labels[0], info)} "
+                            # Autocorrect the text itself using the dataset
+                            matched_term = info.get("NAME", info.get("MEANING", c_str))
+                            # We already know scores[0] > 0.55, so forcefully autocorrect
+                            cell = f" {matched_term} {format_annotation(labels[0], info)} "
+                                
                             predictions.append({
                                 "Original Text": c_str,
                                 "Predicted Code": info.get("CODE", labels[0]),
@@ -169,7 +173,11 @@ def resolve_entities_in_text(text: str):
                 if labels and scores[0] > 0.55:
                     info = LOOKUP.get(labels[0], {})
                     if info:
-                        line = f"{line} {format_annotation(labels[0], info)}"
+                        # Autocorrect the text itself using the dataset
+                        matched_term = info.get("NAME", info.get("MEANING", clean_str))
+                        # We already know scores[0] > 0.55, so forcefully autocorrect
+                        line = line.replace(clean_str, matched_term) + f" {format_annotation(labels[0], info)}"
+                            
                         predictions.append({
                             "Original Text": clean_str,
                             "Predicted Code": info.get("CODE", labels[0]),

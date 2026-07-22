@@ -1,0 +1,179 @@
+{
+  "patient_identification": {
+    "patient_name": "CHINMAYA VINAYAKRAM",
+    "age": "63 Yrs",
+    "sex": "F",
+    "ip_no": "2240017131",
+    "umr_no": "UMB2606179214",
+    "address": "D.No: 3-102 Regals, Shikshana Duk, Ananda Prabha, 153044, Phone: 286822, 9888879800, Fax: 278041",
+    "contact_number": "9888879800",
+    "ward_bed": "1",
+    "department_unit": "UMB/2606170214",
+    "treating_doctor": "",
+    "treating_nurse": "Sr. Nurse R. Sowdhamini",
+    "admission_date": "28/06/2023",
+    "discharge_date": "3-12-2025",
+    "hospital_days": "No. of Hospital Days",
+    "admission_type": {},
+    "government_employee": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "re_admitted": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "mlc": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_group": ""
+  },
+  "diagnosis": {
+    "presenting_complaint": "- Blurred vision\nVisual impairment\nDifficulty seeing clearly, especially while driving\nComplaints of redness and irritation",
+    "working_diagnosis": "RE IMSC",
+    "final_diagnosis": [
+      {
+        "#": "Diagnosis",
+        "ICD Code": ""
+      },
+      {
+        "#": "Diagnosis",
+        "ICD Code": "RE IMSC"
+      },
+      {
+        "#": "Diagnosis",
+        "ICD Code": "NG2"
+      },
+      {
+        "#": "Diagnosis",
+        "ICD Code": "9B10.0"
+      }
+    ],
+    "secondary_diagnoses": ""
+  },
+  "allergies": {
+    "drug_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "food_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "blood_transfusion_allergy": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "other_allergies": "",
+    "high_alert_medication": {
+      "state": "not_recorded",
+      "detail": null
+    }
+  },
+  "procedure": {
+    "planned_procedure": "",
+    "operative_eye_site": "",
+    "iol_power": "",
+    "surgeon": "",
+    "procedure_date": "",
+    "preop_checklist": {},
+    "intra_op_complications": ""
+  },
+  "medications": {
+    "plan_of_care_change": "",
+    "medication_table": []
+  },
+  "vitals_labs": {
+    "vitals_on_admission": {},
+    "mews_total": {
+      "value": null,
+      "band": null
+    },
+    "investigations": []
+  },
+  "risk_assessments": {
+    "fall_risk_morse": {
+      "value": null,
+      "band": null
+    },
+    "pressure_sore_braden": {
+      "value": null,
+      "band": null
+    },
+    "pain_score": {
+      "value": null,
+      "band": null
+    },
+    "acuity_score": {
+      "value": null,
+      "band": null
+    }
+  },
+  "nursing_assessment": {
+    "received_mode": {},
+    "orientation": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "speech": {},
+    "adl_independent": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "respiration": "",
+    "gastrointestinal": "",
+    "bowel": "",
+    "bladder": "",
+    "skin": "",
+    "sleeping_pattern": "",
+    "appetite": "",
+    "mode_of_intake": "",
+    "coping_mechanism": "",
+    "language_spoken": "",
+    "prior_medication_history": ""
+  },
+  "patient_education": {
+    "education_items": {},
+    "educated_by": "",
+    "education_datetime": ""
+  },
+  "fall_prevention": {
+    "applicable_risk_level": "",
+    "interventions_applied": {}
+  },
+  "care_plan": {
+    "care_plan_table": []
+  },
+  "clinical_course": {
+    "course_narrative": "",
+    "shift_events": []
+  },
+  "handover": {
+    "patient_complaints": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "vitals_unstable": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "fall_risk_handover": "",
+    "skin_integrity_checked": {
+      "state": "not_recorded",
+      "detail": null
+    },
+    "patient_movement": []
+  },
+  "outcome": {
+    "result": {},
+    "discharge_disposition": "",
+    "discharge_advice": ""
+  },
+  "data_quality": {
+    "pages_processed": "",
+    "fields_captured": "",
+    "fields_blank": "",
+    "low_confidence_fields": ""
+  }
+}

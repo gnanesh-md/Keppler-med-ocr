@@ -32,8 +32,9 @@ export default defineConfig({
   },
 
   server: {
+    port: 3000,
     proxy: {
-      '/api': 'http://localhost:8888',
+      '/api': 'http://localhost:7620',
     },
     // Allows access via the cloudflared quick-tunnel URL used for remote browser access.
     allowedHosts: true,

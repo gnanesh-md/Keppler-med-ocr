@@ -746,17 +746,24 @@ const OCRWorkspace = ({
   }, []);
 
   const pollJob = (jobId: string, filename: string) => {
+    let failures = 0;
     pollTimers.current[jobId] = setInterval(async () => {
       try {
         const status = await ocrApi.jobStatus(jobId);
+        failures = 0;
         setJobs((prev) => prev.map((j) => (j.jobId === jobId ? { ...j, status: status.status, progress: status.progress } : j)));
         if (status.status === "COMPLETED" || status.status === "FAILED") {
           clearInterval(pollTimers.current[jobId]);
           delete pollTimers.current[jobId];
         }
-      } catch {
-        clearInterval(pollTimers.current[jobId]);
-        delete pollTimers.current[jobId];
+      } catch (e) {
+        failures += 1;
+        // Only give up after 5 consecutive failures (e.g. auth expired / server down)
+        if (failures >= 5) {
+          clearInterval(pollTimers.current[jobId]);
+          delete pollTimers.current[jobId];
+          setJobs((prev) => prev.map((j) => (j.jobId === jobId ? { ...j, status: "FAILED" } : j)));
+        }
       }
     }, 2500);
   };
@@ -923,14 +930,24 @@ const OCRWorkspace = ({
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            onClick={() => row.status === "COMPLETED" && ocrApi.downloadExport(row.jobId, "md", `${row.filename}.md`)}
-                            disabled={row.status !== "COMPLETED"}
-                            className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Download markdown"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                          </button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                disabled={row.status !== "COMPLETED"}
+                                className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                title="Download"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-32">
+                              {(["md", "pdf", "docx", "xlsx", "json"] as const).map((fmt) => (
+                                <DropdownMenuItem key={fmt} onClick={() => ocrApi.downloadExport(row.jobId, fmt, `${row.filename}.${fmt}`)}>
+                                  <span className="uppercase text-xs font-medium">{fmt} Format</span>
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <button onClick={() => removeJob(row.jobId)} className="p-1.5 hover:bg-[#FEF2F2] rounded text-muted-foreground hover:text-destructive transition-colors" title="Remove">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1118,7 +1135,8 @@ const OCRResult = ({
   const openInAI = async () => {
     setIngesting(true);
     try {
-      await assistantApi.ingestText([result.combined_markdown]);
+      const { job_id } = await assistantApi.ingestText([result.combined_markdown]);
+      await assistantApi.waitForIngest(job_id);
       onNavigate("ai-assistant");
     } catch {
       onNavigate("ai-assistant");
@@ -1616,14 +1634,24 @@ const PDFSummarizer = () => {
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => row.status === "COMPLETED" && summarizerApi.downloadExport(row.jobId, "md", `${row.filename}.md`)}
-                        disabled={row.status !== "COMPLETED"}
-                        className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        title="Download markdown"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            disabled={row.status !== "COMPLETED"}
+                            className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Download"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-32">
+                          {(["md", "pdf", "docx"] as const).map((fmt) => (
+                            <DropdownMenuItem key={fmt} onClick={() => summarizerApi.downloadExport(row.jobId, fmt, `${row.filename}.${fmt}`)}>
+                              <span className="uppercase text-xs font-medium">{fmt} Format</span>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </td>
                 </tr>
@@ -1770,6 +1798,14 @@ function newSessionId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `session-${Date.now()}`;
 }
 
+interface ChatAttachment {
+  id: string;
+  filename: string;
+  docId: number | null;
+  status: "uploading" | "processing" | "ingesting" | "ready" | "failed";
+  error?: string;
+}
+
 const AIAssistant = () => {
   const { user } = useAuth();
   const [sessionId, setSessionId] = useState(newSessionId);
@@ -1778,10 +1814,25 @@ const AIAssistant = () => {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [vaultDocs, setVaultDocs] = useState<VaultDoc[]>([]);
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const attachInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     assistantApi.history(sessionId).then(setMessages).catch(() => setMessages([]));
+  }, [sessionId]);
+
+  // Restores attachment chips from the server-side record on session
+  // load/reload — the source of truth lives in Postgres (chat_session_docs),
+  // not just in-memory React state, so a page refresh mid-conversation
+  // doesn't silently lose which documents this chat is scoped to.
+  useEffect(() => {
+    assistantApi
+      .getSessionAttachments(sessionId)
+      .then((docs) =>
+        setAttachments(docs.map((d) => ({ id: `restored-${d.doc_id}`, filename: d.filename, docId: d.doc_id, status: "ready" as const })))
+      )
+      .catch(() => setAttachments([]));
   }, [sessionId]);
 
   useEffect(() => {
@@ -1792,12 +1843,30 @@ const AIAssistant = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, sending]);
 
-  const suggested = [
+  const DEFAULT_SUGGESTED = [
     "Summarize the most recently uploaded document",
     "What medications were mentioned in the last extraction?",
     "List any lab values out of reference range",
     "What is the primary diagnosis?",
   ];
+  const [suggested, setSuggested] = useState<string[]>(DEFAULT_SUGGESTED);
+
+  // Regenerate suggestions from the attached document(s)' real content
+  // whenever the set of "ready" attachments changes — falls back to the
+  // generic defaults once nothing is attached (or on any request failure).
+  const readyDocIds = attachments.filter((a) => a.status === "ready" && a.docId != null).map((a) => a.docId!);
+  const readyDocIdsKey = readyDocIds.slice().sort((a, b) => a - b).join(",");
+  useEffect(() => {
+    if (!readyDocIdsKey) {
+      setSuggested(DEFAULT_SUGGESTED);
+      return;
+    }
+    assistantApi
+      .suggestQuestions(readyDocIdsKey.split(",").map(Number))
+      .then((r) => setSuggested(r.suggestions))
+      .catch(() => setSuggested(DEFAULT_SUGGESTED));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readyDocIdsKey]);
 
   const send = async () => {
     const text = input.trim();
@@ -1806,29 +1875,95 @@ const AIAssistant = () => {
     setError(null);
     setMessages((m) => [...m, { role: "user", content: text }, { role: "assistant", content: "" }]);
     setSending(true);
+    // Non-empty only when at least one attached file is ready — scopes retrieval
+    // to just those files for this query. Empty/undefined keeps today's
+    // behavior of searching the user's whole knowledge base.
+    const attachedDocIds = attachments.filter((a) => a.status === "ready" && a.docId != null).map((a) => a.docId!);
     try {
-      await assistantApi.chatStream(text, sessionId, {
-        onCitations: (citations) => {
-          setMessages((m) => {
-            const next = [...m];
-            next[next.length - 1] = { ...next[next.length - 1], citations };
-            return next;
-          });
+      await assistantApi.chatStream(
+        text,
+        sessionId,
+        {
+          onCitations: (citations) => {
+            setMessages((m) => {
+              const next = [...m];
+              next[next.length - 1] = { ...next[next.length - 1], citations };
+              return next;
+            });
+          },
+          onToken: (token) => {
+            setMessages((m) => {
+              const next = [...m];
+              const last = next[next.length - 1];
+              next[next.length - 1] = { ...last, content: last.content + token };
+              return next;
+            });
+          },
+          onError: (msg) => setError(msg),
         },
-        onToken: (token) => {
-          setMessages((m) => {
-            const next = [...m];
-            const last = next[next.length - 1];
-            next[next.length - 1] = { ...last, content: last.content + token };
-            return next;
-          });
-        },
-        onError: (msg) => setError(msg),
-      });
+        "English",
+        attachedDocIds.length ? attachedDocIds : undefined
+      );
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "The assistant could not answer that. Please try again.");
     } finally {
       setSending(false);
+    }
+  };
+
+  const attachFile = async (file: File) => {
+    const id = `${file.name}-${Date.now()}`;
+    setAttachments((a) => [...a, { id, filename: file.name, docId: null, status: "uploading" }]);
+    const setStatus = (status: ChatAttachment["status"], patch: Partial<ChatAttachment> = {}) =>
+      setAttachments((a) => a.map((x) => (x.id === id ? { ...x, status, ...patch } : x)));
+
+    try {
+      const { job_id: ocrJobId } = await ocrApi.upload(file, "Universal OCR (Any Text)");
+      setStatus("processing");
+      const ocrStatus = await ocrApi.waitForJob(ocrJobId);
+      if (ocrStatus.status !== "COMPLETED" || ocrStatus.result_doc_id == null) {
+        setStatus("failed", { error: ocrStatus.error_message ?? "Extraction failed." });
+        return;
+      }
+
+      setStatus("ingesting");
+      const { job_id: ingestJobId } = await assistantApi.ingestVaultDocs([ocrStatus.result_doc_id]);
+      const ingestStatus = await assistantApi.waitForIngest(ingestJobId);
+      if (ingestStatus.status !== "COMPLETED") {
+        setStatus("failed", { error: ingestStatus.error_message ?? "Failed to add to knowledge base." });
+        return;
+      }
+
+      setStatus("ready", { docId: ocrStatus.result_doc_id });
+      // Persisted server-side (not just this component's React state) so the
+      // scoping survives a reload and can't silently drop between messages.
+      assistantApi.addSessionAttachment(sessionId, ocrStatus.result_doc_id, file.name).catch(() => {});
+    } catch (e) {
+      setStatus("failed", { error: e instanceof ApiError ? e.message : "Attachment failed." });
+    }
+  };
+
+  // Same end state as attachFile, but for a document already sitting in the
+  // Vault (already OCR'd) — skips straight to ingestion, no upload/OCR step.
+  const attachVaultDoc = async (doc: VaultDoc) => {
+    if (attachments.some((a) => a.docId === doc.id && a.status !== "failed")) return; // already attached/in-progress
+    const id = `vault-${doc.id}-${Date.now()}`;
+    // Drop any earlier failed attempt for this doc so retrying doesn't leave a stale duplicate chip.
+    setAttachments((a) => [...a.filter((x) => !(x.docId === doc.id && x.status === "failed")), { id, filename: doc.filename, docId: doc.id, status: "ingesting" }]);
+    const setStatus = (status: ChatAttachment["status"], patch: Partial<ChatAttachment> = {}) =>
+      setAttachments((a) => a.map((x) => (x.id === id ? { ...x, status, ...patch } : x)));
+
+    try {
+      const { job_id: ingestJobId } = await assistantApi.ingestVaultDocs([doc.id]);
+      const ingestStatus = await assistantApi.waitForIngest(ingestJobId);
+      if (ingestStatus.status !== "COMPLETED") {
+        setStatus("failed", { error: ingestStatus.error_message ?? "Failed to add to knowledge base." });
+        return;
+      }
+      setStatus("ready", { docId: doc.id });
+      assistantApi.addSessionAttachment(sessionId, doc.id, doc.filename).catch(() => {});
+    } catch (e) {
+      setStatus("failed", { error: e instanceof ApiError ? e.message : "Attachment failed." });
     }
   };
 
@@ -1838,7 +1973,7 @@ const AIAssistant = () => {
       <div className="w-56 border-r border-border bg-card flex flex-col flex-shrink-0">
         <div className="p-3 border-b border-border">
           <button
-            onClick={() => { setSessionId(newSessionId()); setMessages([]); setError(null); }}
+            onClick={() => { setSessionId(newSessionId()); setMessages([]); setError(null); setAttachments([]); }}
             className="w-full flex items-center gap-2 bg-primary hover:hover:bg-primary/90 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors"
           >
             <Plus className="w-3 h-3" /> New conversation
@@ -1929,15 +2064,74 @@ const AIAssistant = () => {
 
         {/* Input */}
         <div className="border-t border-border p-4 bg-card">
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {attachments.map((a) => (
+                <div
+                  key={a.id}
+                  className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${
+                    a.status === "failed"
+                      ? "border-destructive/30 bg-destructive/10 text-destructive"
+                      : a.status === "ready"
+                      ? "border-primary/20 bg-primary/10 text-primary"
+                      : "border-border bg-secondary text-med-text-secondary"
+                  }`}
+                  title={a.status === "failed" ? a.error : a.filename}
+                >
+                  {a.status === "ready" ? (
+                    <Check className="w-3 h-3" />
+                  ) : a.status === "failed" ? (
+                    <XCircle className="w-3 h-3" />
+                  ) : (
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                  )}
+                  <span className="max-w-[140px] truncate">{a.filename}</span>
+                  <button
+                    onClick={() => {
+                      setAttachments((list) => list.filter((x) => x.id !== a.id));
+                      // Also detach server-side so the scoping this chip
+                      // represented doesn't reappear via the /chat fallback.
+                      if (a.docId != null) assistantApi.removeSessionAttachment(sessionId, a.docId).catch(() => {});
+                    }}
+                    className="hover:text-foreground"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex items-center gap-3 bg-background border border-border rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all">
+            <input
+              ref={attachInputRef}
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) attachFile(file);
+                e.target.value = "";
+              }}
+            />
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
-              placeholder="Ask about any ingested document, medication, diagnosis…"
+              placeholder={
+                attachments.some((a) => a.status === "ready")
+                  ? "Ask about the attached file(s)…"
+                  : "Ask about any ingested document, medication, diagnosis…"
+              }
               className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-med-text-tertiary"
             />
             <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => attachInputRef.current?.click()}
+                title="Attach a PDF or image to this conversation"
+                className="w-8 h-8 hover:bg-secondary rounded-lg flex items-center justify-center transition-colors text-med-text-secondary hover:text-primary"
+              >
+                <Paperclip className="w-3.5 h-3.5" />
+              </button>
               <button
                 onClick={send}
                 disabled={sending}
@@ -1961,17 +2155,36 @@ const AIAssistant = () => {
         </div>
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {vaultDocs.length === 0 && <div className="text-xs text-muted-foreground">No documents in your vault yet.</div>}
-          {vaultDocs.map((doc) => (
-            <div key={doc.id} className="border border-border rounded-lg p-3">
-              <div className="flex items-start gap-2">
-                <FileText className="w-3.5 h-3.5 text-med-text-tertiary flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[10px] font-medium text-foreground truncate">{doc.filename}</div>
-                  <div className="text-[10px] text-med-text-tertiary">{doc.doc_category}</div>
+          {vaultDocs.map((doc) => {
+            const attachment = attachments.find((a) => a.docId === doc.id);
+            const busy = attachment && attachment.status !== "ready" && attachment.status !== "failed";
+            return (
+              <button
+                key={doc.id}
+                onClick={() => attachVaultDoc(doc)}
+                disabled={!!attachment && attachment.status !== "failed"}
+                title={attachment?.status === "failed" ? `${attachment.error} (click to retry)` : "Add to this conversation"}
+                className={`w-full text-left border rounded-lg p-3 transition-colors ${
+                  attachment?.status === "ready"
+                    ? "border-primary/30 bg-primary/5"
+                    : attachment?.status === "failed"
+                    ? "border-destructive/30 bg-destructive/5 hover:border-destructive/50"
+                    : "border-border hover:border-primary/30 hover:bg-secondary"
+                } ${attachment && attachment.status !== "failed" ? "cursor-default" : "cursor-pointer"}`}
+              >
+                <div className="flex items-start gap-2">
+                  <FileText className="w-3.5 h-3.5 text-med-text-tertiary flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] font-medium text-foreground truncate">{doc.filename}</div>
+                    <div className="text-[10px] text-med-text-tertiary">{doc.doc_category}</div>
+                  </div>
+                  {busy && <RefreshCw className="w-3 h-3 text-med-text-tertiary animate-spin flex-shrink-0" />}
+                  {attachment?.status === "ready" && <Check className="w-3 h-3 text-primary flex-shrink-0" />}
+                  {attachment?.status === "failed" && <XCircle className="w-3 h-3 text-destructive flex-shrink-0" />}
                 </div>
-              </div>
-            </div>
-          ))}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -1987,6 +2200,7 @@ const DocumentVault = ({ onNavigate }: { onNavigate: (s: Screen) => void }) => {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [viewer, setViewer] = useState<{ filename: string; markdown: string } | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [downloadDropdownId, setDownloadDropdownId] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const load = () => {
@@ -2021,25 +2235,55 @@ const DocumentVault = ({ onNavigate }: { onNavigate: (s: Screen) => void }) => {
     }
   };
 
-  const download_doc = async (doc: VaultDoc) => {
-    const res = await vaultApi.get(doc.id);
-    const blob = new Blob([res.markdown], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${doc.filename}.md`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+  const download_doc = async (doc: VaultDoc, format: string) => {
+    setDownloadDropdownId(null);
+    try {
+      if (format === 'md') {
+        const res = await vaultApi.get(doc.id);
+        const blob = new Blob([res.markdown], { type: "text/markdown" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${doc.filename}.md`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } else {
+        // Authenticated fetch for binary files
+        const blob = await vaultApi.downloadExport(doc.id, format);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${doc.filename}.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      setNotice("Failed to download document. Please try again.");
+    }
   };
+
+  // Close dropdown if clicked outside
+  useEffect(() => {
+    const handleClick = () => setDownloadDropdownId(null);
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, []);
 
   const loadIntoRAG = async (doc: VaultDoc) => {
     setBusyId(doc.id);
     setNotice(null);
     try {
-      await assistantApi.ingestVaultDocs([doc.id]);
-      setNotice(`"${doc.filename}" loaded into the AI Assistant's knowledge graph.`);
+      const { job_id } = await assistantApi.ingestVaultDocs([doc.id]);
+      const status = await assistantApi.waitForIngest(job_id);
+      if (status.status === "FAILED") {
+        setNotice(status.error_message ?? "Failed to load into RAG.");
+      } else {
+        setNotice(`"${doc.filename}" loaded into the AI Assistant's knowledge graph.`);
+      }
     } catch (e) {
       setNotice(e instanceof ApiError ? e.message : "Failed to load into RAG.");
     } finally {
@@ -2152,10 +2396,32 @@ const DocumentVault = ({ onNavigate }: { onNavigate: (s: Screen) => void }) => {
                         <td className="px-4 py-3 text-xs text-muted-foreground">{doc.confidence_score != null ? `${doc.confidence_score}%` : "—"}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{doc.extraction_date ?? "—"}</td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity text-sm">
-                            <button onClick={(e) => { e.stopPropagation(); download_doc(doc); }} className="p-1 hover:bg-secondary rounded transition-colors" title="Download markdown">
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity text-sm relative">
+                            <button 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setDownloadDropdownId(downloadDropdownId === doc.id ? null : doc.id); 
+                              }} 
+                              className="p-1 hover:bg-secondary rounded transition-colors" 
+                              title="Export Document"
+                            >
                               📥
                             </button>
+                            
+                            {downloadDropdownId === doc.id && (
+                              <div className="absolute right-0 top-8 z-50 w-40 bg-card border border-border rounded-lg shadow-xl py-1" onClick={e => e.stopPropagation()}>
+                                <button onClick={() => download_doc(doc, 'pdf')} className="w-full text-left px-4 py-2 text-xs hover:bg-secondary text-foreground transition-colors">
+                                  PDF Document (.pdf)
+                                </button>
+                                <button onClick={() => download_doc(doc, 'docx')} className="w-full text-left px-4 py-2 text-xs hover:bg-secondary text-foreground transition-colors">
+                                  Word Document (.docx)
+                                </button>
+                                <button onClick={() => download_doc(doc, 'md')} className="w-full text-left px-4 py-2 text-xs hover:bg-secondary text-foreground transition-colors border-t border-border mt-1 pt-2">
+                                  Raw Markdown (.md)
+                                </button>
+                              </div>
+                            )}
+                            
                             <button onClick={(e) => { e.stopPropagation(); loadIntoRAG(doc); }} disabled={busyId === doc.id} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-primary transition-colors" title="Load into AI Assistant">
                               <Sparkles className="w-3 h-3" />
                             </button>

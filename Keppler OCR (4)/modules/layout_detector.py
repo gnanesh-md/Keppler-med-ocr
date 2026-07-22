@@ -101,6 +101,20 @@ class DocLayoutDetector:
             # 1. Merge overlapping regions (>30% IoU)
             merged_regions = self._merge_overlaps(regions)
             
+            # 2. Check if total true area of merged regions is suspiciously small
+            w, h = image.size
+            total_area = 0
+            for r in merged_regions:
+                box = r["bbox"]
+                total_area += (box[2] - box[0]) * (box[3] - box[1])
+                
+            # YOLO often shreds handwritten pages into tiny fragments or misses text.
+            # If the regions cover less than 40% of the page, bypass layout detection
+            # and let the VLM process the full page natively (which it does brilliantly).
+            if total_area < (w * h * 0.40):
+                logger.info(f"YOLO Layout detected < 40% of page area. Falling back to full page processing.")
+                return [self._fallback_region(image)]
+            
             # The sorting is now handled by the Reading Order Engine
             # in precision_ocr.py, so we just return the merged regions.
             return merged_regions

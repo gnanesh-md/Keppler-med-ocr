@@ -130,6 +130,9 @@ class ChatRequest(BaseModel):
     message: str
     session_id: str = "default"
     target_language: str = "English"
+    # Scopes retrieval to specific ingested documents instead of everything
+    # the user has loaded — None/empty means search the whole knowledge base.
+    doc_ids: Optional[List[int]] = None
 
 
 class Citation(BaseModel):
@@ -151,3 +154,10 @@ class IngestTextRequest(BaseModel):
 
 class IngestVaultDocRequest(BaseModel):
     doc_ids: List[int]
+
+
+class KBDocumentOut(BaseModel):
+    doc_id: int
+    filename: str
+    category: str
+    chunk_count: int

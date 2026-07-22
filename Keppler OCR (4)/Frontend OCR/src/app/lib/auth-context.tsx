@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
-import { authApi, getToken, setToken, AuthUser, ApiError } from "./api";
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
+import { authApi, getToken, setToken, onUnauthorized, AuthUser, ApiError } from "./api";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -43,6 +43,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(USER_KEY);
     setUser(null);
   }, []);
+
+  // A 401 from any API call means the stored token is dead (expired or
+  // invalidated) — without this, isAuthenticated stays true forever (it only
+  // checks that a token string exists) and the UI is stuck rendering as
+  // logged-in while every request fails, with no way back to the login screen.
+  useEffect(() => {
+    onUnauthorized(logout);
+  }, [logout]);
 
   return (
     <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout }}>

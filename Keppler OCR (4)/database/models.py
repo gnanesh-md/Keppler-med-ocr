@@ -103,6 +103,23 @@ class ChatMessage(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 
+class ChatSessionDoc(Base):
+    """Which documents are attached/scoped to a given AI Assistant chat
+    session (Phase 10 follow-up) — server-side source of truth, not just
+    client-side React state, so a page reload or any client-side state loss
+    can't silently drop a conversation's document scoping. /chat and
+    /chat/stream fall back to this when the request doesn't explicitly pass
+    doc_ids."""
+    __tablename__ = "chat_session_docs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    session_id = Column(String, index=True)
+    doc_id = Column(Integer)
+    filename = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class AuditLog(Base):
     """Who did what, when — every extraction/export/chat/auth event (Phase 6).
     Append-only; read via the admin-only GET /api/v1/admin/audit-log endpoint."""
@@ -121,7 +138,7 @@ class AuditLog(Base):
 # `check_same_thread` is a SQLite-only pymysql/sqlite3 connect() kwarg; passing it
 # to psycopg (Postgres) raises TypeError, so only apply it for sqlite:// URLs.
 _connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(settings.DATABASE_URL, connect_args=_connect_args)
+engine = create_engine(settings.DATABASE_URL, connect_args=_connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Schema is managed by Alembic (see alembic/) — run `alembic upgrade head` before

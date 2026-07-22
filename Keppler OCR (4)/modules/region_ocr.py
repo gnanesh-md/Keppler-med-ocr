@@ -138,18 +138,23 @@ class AsyncRegionOCR:
             ocr_model_used = self.model_name
 
             if not extracted_text or ocr_confidence < TROCR_FALLBACK_THRESHOLD:
-                try:
-                    from modules.handwriting_ocr import TrOCREngine
-                    trocr_text, trocr_confidence = await asyncio.to_thread(
-                        TrOCREngine().recognize, cropped_img
-                    )
-                    if trocr_text and trocr_confidence > ocr_confidence:
-                        extracted_text = trocr_text
-                        ocr_confidence = trocr_confidence
-                        ocr_model_used = "trocr-base-handwritten"
-                        strategy_used = "trocr-fallback"
-                except Exception as e:
-                    logger.warning(f"TrOCR fallback failed for region {region['region_id']}: {e}")
+                # TrOCR is strictly trained on single lines of text (IAM dataset).
+                # Passing a full page or massive paragraph to TrOCR causes it to hallucinate
+                # a single word with artificially high confidence, overwriting the VLM's result.
+                is_small_region = (cropped_img.width * cropped_img.height) < (w * h * 0.3)
+                if is_small_region:
+                    try:
+                        from modules.handwriting_ocr import TrOCREngine
+                        trocr_text, trocr_confidence = await asyncio.to_thread(
+                            TrOCREngine().recognize, cropped_img
+                        )
+                        if trocr_text and trocr_confidence > ocr_confidence:
+                            extracted_text = trocr_text
+                            ocr_confidence = trocr_confidence
+                            ocr_model_used = "trocr-base-handwritten"
+                            strategy_used = "trocr-fallback"
+                    except Exception as e:
+                        logger.warning(f"TrOCR fallback failed for region {region['region_id']}: {e}")
 
             return {
                 "page": page_num,

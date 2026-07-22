@@ -6,7 +6,7 @@ vault.py, assistant.py, dashboard.py) don't need to change.
 """
 import bcrypt
 
-from database.models import AuditLog, ChatMessage, SessionLocal, User, VaultDocument
+from database.models import AuditLog, ChatMessage, ChatSessionDoc, SessionLocal, User, VaultDocument
 
 
 def initialize_extended_schema():
@@ -187,6 +187,26 @@ def get_document_markdown(doc_id, user_id):
         db.close()
 
 
+def get_document_for_export(doc_id, user_id):
+    """Retrieves markdown, client name, and filename for PDF/DOCX exporters."""
+    db = SessionLocal()
+    try:
+        doc = (
+            db.query(VaultDocument)
+            .filter(VaultDocument.id == doc_id, VaultDocument.user_id == user_id)
+            .first()
+        )
+        if doc:
+            return {
+                "markdown": doc.raw_markdown,
+                "client": doc.doc_category or "Universal OCR (Any Text)",
+                "filename": doc.filename
+            }
+        return None
+    finally:
+        db.close()
+
+
 def save_chat_message(user_id, app_type, session_id, role, content):
     db = SessionLocal()
     try:
@@ -206,5 +226,45 @@ def get_chat_history(user_id, app_type, session_id=None):
             query = query.filter(ChatMessage.session_id == session_id)
         rows = query.order_by(ChatMessage.timestamp.asc()).all()
         return [{"role": r.role, "content": r.content} for r in rows]
+    finally:
+        db.close()
+
+
+def add_session_doc(user_id, session_id, doc_id, filename):
+    """Records that doc_id is attached/scoped to this chat session — server
+    side, so it survives a page reload even if client state doesn't."""
+    db = SessionLocal()
+    try:
+        exists = db.query(ChatSessionDoc).filter(
+            ChatSessionDoc.user_id == user_id, ChatSessionDoc.session_id == session_id,
+            ChatSessionDoc.doc_id == doc_id,
+        ).first()
+        if not exists:
+            db.add(ChatSessionDoc(user_id=user_id, session_id=session_id, doc_id=doc_id, filename=filename))
+            db.commit()
+    finally:
+        db.close()
+
+
+def get_session_docs(user_id, session_id):
+    db = SessionLocal()
+    try:
+        rows = db.query(ChatSessionDoc).filter(
+            ChatSessionDoc.user_id == user_id, ChatSessionDoc.session_id == session_id,
+        ).order_by(ChatSessionDoc.created_at.asc()).all()
+        return [{"doc_id": r.doc_id, "filename": r.filename} for r in rows]
+    finally:
+        db.close()
+
+
+def remove_session_doc(user_id, session_id, doc_id):
+    db = SessionLocal()
+    try:
+        deleted = db.query(ChatSessionDoc).filter(
+            ChatSessionDoc.user_id == user_id, ChatSessionDoc.session_id == session_id,
+            ChatSessionDoc.doc_id == doc_id,
+        ).delete(synchronize_session=False)
+        db.commit()
+        return deleted
     finally:
         db.close()

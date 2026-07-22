@@ -43,7 +43,7 @@ from sqlalchemy import text
 
 from core.config import settings
 from core.encryption import read_encrypted_upload
-from database.db_utils import archive_document
+from database.db_utils import archive_document, get_document_full
 from database.models import Document, ExtractionJob, SessionLocal
 from modules.grounding import normalize_predictions
 from modules.precision_ocr import (
@@ -335,6 +335,76 @@ def run_summary_job(self, job_id: str):
         job.result_doc_id = vault_id
         job.status = "COMPLETED"
         job.progress = 100.0
+        job.completed_at = datetime.utcnow()
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        try:
+            raise self.retry(exc=exc, countdown=10)
+        except MaxRetriesExceededError:
+            _mark_job_failed(job_id, str(exc))
+            raise
+    finally:
+        db.close()
+
+
+# ---------------------------------------------------------------------------
+# RAG ingestion (Phase 9) — moved off the request path so a large vault
+# document doesn't block the FastAPI event loop during embedding, consistent
+# with how OCR/summarization already run as Celery tasks. The router stores
+# what to ingest in ExtractionJob.progress_checkpoint (an existing JSON
+# column) rather than serializing potentially-large page text through task
+# args; the task re-derives content from the DB, same pattern run_summary_job
+# uses for its Document row.
+# ---------------------------------------------------------------------------
+@celery_app.task(bind=True, max_retries=2)
+def run_ingest_job(self, job_id: str):
+    from modules.rag_engine import ingest_document
+
+    db = SessionLocal()
+    try:
+        job = db.query(ExtractionJob).filter(ExtractionJob.job_id == job_id).first()
+        if not job:
+            logger.error(f"run_ingest_job: job {job_id} not found")
+            return
+
+        job.status = "PROCESSING"
+        db.commit()
+
+        payload = job.progress_checkpoint or {}
+        kind = payload.get("kind")
+        user_id = job.user_id
+        total_chunks = 0
+
+        if kind == "vault":
+            doc_ids = payload.get("doc_ids", [])
+            for i, doc_id in enumerate(doc_ids):
+                doc = get_document_full(doc_id, user_id)
+                if not doc:
+                    continue
+                metadata = doc.get("metadata") or {}
+                if metadata.get("pages"):
+                    page_chunks = [(p["label"], p["text"]) for p in metadata["pages"]]
+                elif metadata.get("page_texts"):
+                    page_chunks = [(f"Page {k}", v) for k, v in metadata["page_texts"].items()]
+                else:
+                    page_chunks = [("Document", doc["markdown"])]
+                total_chunks += ingest_document(user_id, doc_id, doc["filename"], doc["doc_category"], page_chunks)
+                job.progress = round((i + 1) / max(len(doc_ids), 1) * 100, 1)
+                db.commit()
+        elif kind == "text":
+            documents = payload.get("documents", [])
+            for i, text in enumerate(documents):
+                doc_id = abs(hash(f"{user_id}:{text[:100]}")) % 1_000_000_000
+                total_chunks += ingest_document(user_id, doc_id, f"Pasted Text {i + 1}", "manual", [("Text", text)])
+                job.progress = round((i + 1) / max(len(documents), 1) * 100, 1)
+                db.commit()
+        else:
+            raise ValueError(f"Unknown ingest kind: {kind!r}")
+
+        job.status = "COMPLETED"
+        job.progress = 100.0
+        job.progress_checkpoint = {**payload, "ingested_chunks": total_chunks}
         job.completed_at = datetime.utcnow()
         db.commit()
     except Exception as exc:

@@ -12,7 +12,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # 🚀 CRITICAL SYSTEM DEPENDENCIES
-# - build-essential/pkg-config/libcairo2-dev: xhtml2pdf's native deps.
+# - build-essential/pkg-config/libcairo2-dev: xhtml2pdf's native deps.      
 # - libgl1/libglib2.0-0: cv2 (opencv) needs libGL.so.1 even via the
 #   "headless" package, pulled in transitively by ultralytics/other deps —
 #   this bit us for real: the host dev machine has these from its desktop
@@ -41,7 +41,7 @@ COPY . .
 COPY --from=frontend-build ["/frontend/dist", "./Frontend OCR/dist"]
 
 # Expose the FastAPI gateway's port
-EXPOSE 8000
+EXPOSE 8111
 
 # Command to run the application
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8111"]

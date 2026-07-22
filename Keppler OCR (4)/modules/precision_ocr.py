@@ -207,8 +207,16 @@ def _upscale_if_small(img: Image.Image) -> Image.Image:
     w, h = img.size
     if min(w, h) < MIN_DIM:
         scale = MIN_DIM / min(w, h)
-        new_w, new_h = int(w * scale), int(h * scale)
-        img = img.resize((new_w, new_h), Image.BILINEAR)
+        # Cap scale factor to prevent line crops (e.g. 800x40) from becoming massively oversized
+        if scale > 2.5:
+            scale = 2.5
+        # Ensure the maximum dimension doesn't exceed 3000 after upscaling
+        if max(w, h) * scale > 3000:
+            scale = 3000 / max(w, h)
+        
+        if scale > 1.0:
+            new_w, new_h = int(w * scale), int(h * scale)
+            img = img.resize((new_w, new_h), Image.BILINEAR)
     return img
 
 def strategy_original(img: Image.Image) -> Image.Image:
@@ -423,55 +431,318 @@ def load_pdf_pages(file_bytes: bytes, max_pages: int | None = None) -> list[Imag
 # ---------------------------------------------------------------------------
 # 5.  EXPORT GENERATORS  (PDF / DOCX)
 # ---------------------------------------------------------------------------
+def _is_table_separator(line: str) -> bool:
+    """
+    True for a Markdown table separator/alignment row (e.g. '|---|---|',
+    '|:--:|-|'). Shared by every download format (PDF/DOCX/Excel/JSON) so a
+    row is classified the same way everywhere — before this was unified,
+    DOCX used a bare `'---' in line` check (misses a minimal '|-|-|-|'
+    separator, and can wrongly swallow a real data row that merely contains
+    the substring '---') while Excel/JSON didn't allow ':' (misreads a
+    colon-alignment separator like '|:---:|' as a real data row).
+    """
+    return bool(re.fullmatch(r'[\s|:\-]+', line)) and '-' in line
+
+
+def _normalize_markdown_tables(text: str) -> str:
+    """
+    Rebuilds every block of consecutive '|'-led lines into a strict, valid
+    Markdown table (matching column counts, a proper '|---|' separator row)
+    before handing text to python-markdown's 'tables' extension.
+
+    That extension is strict: a separator row whose dash-group count doesn't
+    match the header, or a data row with more/fewer cells than the header,
+    makes it silently bail and render the *entire* block as one plain
+    paragraph of literal pipe characters instead of a table. Real vision-
+    model OCR output hits this constantly (an extra/missing cell on one row,
+    a mangled separator), so without this repair pass the PDF export renders
+    those tables as an unstructured wall of text. generate_docx/_excel/_json
+    sidestep this by parsing pipe-led lines manually instead of relying on
+    the strict extension; this brings the PDF path in line with them.
+    """
+    lines = text.split('\n')
+    out = []
+    i, n = 0, len(lines)
+    while i < n:
+        if lines[i].strip().startswith('|'):
+            j = i
+            block = []
+            while j < n and lines[j].strip().startswith('|'):
+                block.append(lines[j].strip())
+                j += 1
+
+            rows = []
+            for raw in block:
+                if _is_table_separator(raw):
+                    continue  # drop the model's own (possibly malformed) separator row
+                rows.append([c.strip() for c in raw.strip('|').split('|')])
+
+            if rows:
+                col_count = len(rows[0])
+                fixed = []
+                for r in rows:
+                    if len(r) < col_count:
+                        r = r + [''] * (col_count - len(r))
+                    elif len(r) > col_count:
+                        r = r[:col_count]
+                    # xhtml2pdf collapses a column's width to ~0 (ignoring any
+                    # explicit/fixed width) if any cell in it is truly empty,
+                    # so a blank field — which the LDSL/Healmax blueprints
+                    # explicitly produce for missing data — must never reach
+                    # the PDF renderer as an empty cell.
+                    r = [c if c.strip() else '&nbsp;' for c in r]
+                    fixed.append(r)
+                out.append('| ' + ' | '.join(fixed[0]) + ' |')
+                out.append('|' + '|'.join(['---'] * col_count) + '|')
+                out.extend('| ' + ' | '.join(r) + ' |' for r in fixed[1:])
+            i = j
+        else:
+            out.append(lines[i])
+            i += 1
+    return '\n'.join(out)
+
+
+def _widest_table_column_count(text: str) -> int:
+    """
+    Max column count across every Markdown table row in the text (post
+    _normalize_markdown_tables, so rows are already well-formed). Landscape
+    orientation should key off this, not merely "does a table exist" — a
+    narrow 4-column LDSL table fits comfortably in portrait, and forcing it
+    into landscape actively hurts: A4 landscape has *less* vertical room
+    (595pt) than portrait (842pt), so the same row count that fit on one
+    portrait page spills onto a second landscape page for no benefit. A wide
+    9-column Healmax table genuinely needs the extra horizontal room though.
+    """
+    max_cols = 0
+    for line in text.split('\n'):
+        line = line.strip()
+        if line.startswith('|') and not _is_table_separator(line):
+            max_cols = max(max_cols, len(line.strip('|').split('|')))
+    return max_cols
+
+
+_META_FIELD_RE = re.compile(r'^\*{0,2}([^*:|]+):\*{0,2}\s*(.*)$')
+
+
+def _is_meta_field_segment(segment: str) -> bool:
+    return bool(_META_FIELD_RE.match(segment.strip()))
+
+
+def _render_meta_group(lines: list[str]) -> str:
+    """
+    Renders one or more consecutive 'Label: Value | Label: Value' lines
+    (patient info, doctor/date fields, footer fields — bold or not) as a
+    single borderless table with one row per line, instead of plain run-on
+    text with literal '|' characters. A real HTML table is used (rather than
+    e.g. flexbox) because xhtml2pdf only supports a small, table/block-based
+    subset of CSS2.1 — flex layout is silently dropped.
+
+    The divider rule goes on the LAST row's cells only, never on the <table>
+    or a wrapping <div>: xhtml2pdf repeats a border set on a multi-child
+    block container onto every child row instead of drawing it once at the
+    bottom (verified empirically), so putting it on the container would draw
+    a line under every single field row instead of one line under the group.
+    (A leading rule was tried for footer groups too, to box them like a
+    signature bar, but immediately following another group's own trailing
+    rule it produced two near-touching lines — a trailing-only rule reads
+    just as clearly as a boxed footer without that artifact.)
+    """
+    parsed = [[s.strip() for s in line.split('|')] for line in lines]
+    max_cols = max(len(segs) for segs in parsed)
+    rows_html = []
+    for idx, segments in enumerate(parsed):
+        cells = []
+        for i, seg in enumerate(segments):
+            m = _META_FIELD_RE.match(seg)
+            label, value = m.group(1).strip(), m.group(2).strip()
+            # A leading bold tag like "**Footer:**" is sometimes just a section
+            # label prefixed onto the first real field rather than a field of
+            # its own (e.g. "**Footer:** Collection Executive: John") — when
+            # the value itself parses as another Label: Value pair, prefer
+            # that inner pair so "Collection Executive" gets its own clean
+            # field instead of being nested as a value under "Footer".
+            inner = _META_FIELD_RE.match(value)
+            if inner and inner.group(1).strip():
+                label, value = inner.group(1).strip(), inner.group(2).strip()
+            attrs = ' style="width: 40%"' if i == 0 and len(segments) > 1 else ''
+            # A row with fewer fields than the widest row in this group (e.g.
+            # a lone "Ultrasound Findings: N/A" alongside two-field rows)
+            # needs colspan on its last cell so its border — if this ends up
+            # being the group's last row — stretches the full row width
+            # instead of stopping at the first column.
+            if i == len(segments) - 1 and len(segments) < max_cols:
+                attrs += f' colspan="{max_cols - len(segments) + 1}"'
+            cells.append(f'<td class="meta-cell"{attrs}><span class="meta-label">{label}:</span> {value}</td>')
+        cls = ' class="meta-last"' if idx == len(parsed) - 1 else ''
+        rows_html.append(f'<tr{cls}>{"".join(cells)}</tr>')
+    return f'<table class="meta-table">{"".join(rows_html)}</table>'
+
+
+def _is_section_heading(line: str) -> bool:
+    s = line.strip()
+    return s.startswith('**') and s.endswith('**') and s.count('**') == 2 and ':' not in s[2:-2] and '|' not in s
+
+
+def _preprocess_pdf_text(text: str) -> tuple[str, dict[str, str]]:
+    """
+    Pulls patient-info/footer 'Label: Value' lines and standalone bold
+    section titles out of the normal Markdown paragraph flow and pre-renders
+    them (info lines as an aligned table row, section titles as a styled
+    heading) so the PDF shows a real form layout instead of a single run-on
+    line of text with literal pipe characters. Each becomes a placeholder
+    token here, substituted back into the real HTML after markdown.markdown()
+    runs, since injecting raw HTML mid-stream would otherwise fight the
+    Markdown parser's own paragraph/emphasis handling.
+    """
+    placeholders: dict[str, str] = {}
+    out_lines: list[str] = []
+    meta_buffer: list[str] = []
+
+    def flush_meta():
+        if meta_buffer:
+            key = f'KEPPLERPLACEHOLDER{len(placeholders)}X'
+            placeholders[key] = _render_meta_group(list(meta_buffer))
+            out_lines.append(key)
+            meta_buffer.clear()
+
+    for line in text.split('\n'):
+        stripped = line.strip()
+        if not stripped or stripped.startswith(('|', '#', '- ', '* ')):
+            flush_meta()
+            out_lines.append(line)
+            continue
+
+        if _is_section_heading(stripped):
+            flush_meta()
+            key = f'KEPPLERPLACEHOLDER{len(placeholders)}X'
+            placeholders[key] = f'<h4 class="section-heading">{stripped.strip("*")}</h4>'
+            out_lines.append(key)
+            continue
+
+        segments = [s.strip() for s in stripped.split('|')]
+        if segments and all(_is_meta_field_segment(s) for s in segments):
+            meta_buffer.append(stripped)
+            continue
+
+        flush_meta()
+        out_lines.append(line)
+    flush_meta()
+    return '\n'.join(out_lines), placeholders
+
+
 def generate_pro_pdf(md_text: str, client_name: str) -> bytes | str:
     try:
         safe = re.sub(r'<\|.*?\|>', '', md_text)
         safe = safe.replace('<', '&lt;').replace('>', '&gt;')
         safe = safe.replace('\u2022', '*').replace('\u2713', '[x]')
-        html_body = markdown.markdown(safe, extensions=['tables', 'nl2br'])
-        orientation = "landscape" if "| S.No |" in md_text else "portrait"
         
+        is_form = "LDSL" in client_name or "Healmax" in client_name
+        
+        if is_form:
+            safe = _normalize_markdown_tables(safe)
+            safe, meta_placeholders = _preprocess_pdf_text(safe)
+            subtitle = "Test Requisition Form"
+        else:
+            meta_placeholders = {}
+            subtitle = "Extraction Report"
+            # Prevent markdown from parsing lists if we want them to look like raw text lines
+            safe = re.sub(r'(?m)^(\s*)[-*]\s+', r'\1&#45; ', safe)
+            
+        orientation = "landscape" if _widest_table_column_count(safe) > 6 else "portrait"
+        
+        extra_css = ""
+        # CSS nth-child is ignored by xhtml2pdf, so we rely on inline styles below, 
+        # but keep this for standard HTML viewers if ever exported.
+        if "LDSL" in client_name:
+            extra_css = """
+            th:nth-child(1) { width: 8%; }
+            th:nth-child(2) { width: 45%; }
+            th:nth-child(3) { width: 30%; }
+            th:nth-child(4) { width: 17%; }
+            """
+        elif "Healmax" in client_name:
+            extra_css = """
+            th:nth-child(2) { width: 20%; }
+            th:nth-child(4) { width: 20%; }
+            """
+
         pdf_css = f"""
         @page {{ size: A4 {orientation}; margin: 1.8cm 1.5cm 1.8cm 1.5cm; }}
-        body {{ font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #222; line-height: 1.5; }}
-        .cover {{ text-align: center; padding: 30px 0 20px; border-bottom: 3px solid #1a5276; margin-bottom: 20px; }}
-        .cover h1 {{ font-size: 18px; color: #1a5276; margin: 0 0 4px; letter-spacing: 1px; }}
-        .cover h2 {{ font-size: 13px; color: #444; margin: 0 0 16px; font-weight: normal; }}
-        .cover .meta-box {{ display: inline-block; background: #eaf2ff; border: 1px solid #1a5276; border-radius: 6px; padding: 10px 30px; font-size: 11px; color: #1a5276; font-weight: bold; }}
-        h1 {{ font-size: 16px; color: #1a5276; border-bottom: 2px solid #1a5276; padding-bottom: 3px; margin-top: 18px; margin-bottom: 6px; }}
-        h2 {{ font-size: 13px; color: #1a5276; background: #eaf2ff; padding: 4px 8px; border-left: 4px solid #1a5276; margin-top: 14px; margin-bottom: 6px; }}
-        h3 {{ font-size: 11px; color: #1a5276; margin-top: 10px; margin-bottom: 4px; }}
-        table {{ width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 9.5px; page-break-inside: avoid; }}
-        th {{ background: #1a5276; color: white; padding: 5px 7px; text-align: left; font-weight: bold; }}
-        td {{ border: 1px solid #bbb; padding: 4px 7px; vertical-align: top; }}
-        tr:nth-child(even) td {{ background: #f4f8ff; }}
-        p {{ margin: 3px 0; }}
-        ul {{ margin: 3px 0 6px 16px; padding: 0; }}
-        li {{ margin: 1px 0; }}
-        strong {{ color: #1a5276; }}
-        .footer-note {{ font-size: 8px; color: #888; text-align: center; margin-top: 20px; border-top: 1px solid #ddd; padding-top: 6px; }}
+        body {{ font-family: Courier, monospace; font-size: 11px; color: #2a2a2a; line-height: 1.5; white-space: pre-wrap; }}
+        .cover {{ padding: 10px 0 0; margin-bottom: 14px; }}
+        .cover p.title {{ font-size: 22px; color: #123049; font-weight: bold; margin: 0; letter-spacing: 0.2px; font-family: Arial, sans-serif; }}
+        .cover p.subtitle {{ font-size: 11px; color: #667080; margin: 3px 0 0 0; padding-bottom: 11px; border-bottom: 2px solid #d8dde2; font-family: Arial, sans-serif; }}
+        h1 {{ font-size: 16px; color: #333; border-bottom: 1px solid #d8dde2; padding-bottom: 3px; margin-top: 18px; margin-bottom: 6px; font-family: Arial, sans-serif; }}
+        h2 {{ font-size: 13px; color: #444; margin-top: 14px; margin-bottom: 6px; font-family: Arial, sans-serif; }}
+        h3 {{ font-size: 11px; color: #555; margin-top: 10px; margin-bottom: 4px; font-family: Arial, sans-serif; }}
+        table {{ width: 100%; table-layout: fixed; border-collapse: collapse; margin: 11px 0; font-size: 10px; font-family: Arial, sans-serif; }}
+        thead {{ display: table-header-group; }}
+        tr {{ page-break-inside: avoid; }}
+        th {{ background: #eef2f7; color: #123049; padding: 8px; text-align: left; font-weight: bold; border: 1px solid #dde2e7; }}
+        td {{ border: 1px solid #dde2e7; padding: 7px 8px; vertical-align: top; word-wrap: break-word; }}
+        tr:nth-child(even) td {{ background: #f8fafb; }}
+        p {{ margin: 4px 0; }}
+        ul {{ margin: 4px 0 8px 16px; padding: 0; }}
+        li {{ margin: 2px 0; }}
+        strong {{ color: #123049; }}
+        .meta-table {{ width: 100%; table-layout: auto; border-collapse: collapse; margin: 6px 0; font-family: Arial, sans-serif; }}
+        .meta-table td.meta-cell {{ border: none; padding: 4px 10px 4px 0; font-size: 10px; }}
+        .meta-table tr.meta-last td.meta-cell {{ border-bottom: 1px solid #d8dde2; padding-bottom: 9px; }}
+        .meta-label {{ font-weight: bold; color: #123049; }}
+        .section-heading {{ font-size: 11.5px; font-style: italic; font-weight: bold; color: #123049; margin-top: 14px; margin-bottom: 5px; border-bottom: 1px solid #d8dde2; padding-bottom: 3px; font-family: Arial, sans-serif; }}
+        .footer-note {{ font-size: 9px; color: #8a93a0; text-align: center; margin-top: 16px; border-top: 1px solid #e2e6ea; padding-top: 6px; font-family: Arial, sans-serif; }}
+        {extra_css}
         """
 
         cover = f"""
         <div class="cover">
-            <h1>GREAT EASTERN MEDICAL SCHOOL &amp; HOSPITAL</h1>
-            <h2>Promoted by Aditya Educational Society</h2>
-            <div class="meta-box">
-                OCR EXTRACTION REPORT<br/>
-                <span style="font-size:13px">{client_name}</span>
-            </div>
-            <p style="font-size:9px;color:#888;margin-top:12px">
-                Generated on {time.strftime('%d %B %Y at %I:%M %p')} &nbsp;|&nbsp; Confidential — For Medical Records Only
-            </p>
+            <p class="title">{client_name}</p>
+            <p class="subtitle">{subtitle}</p>
         </div>
         """
 
-        footer = """
+        footer = f"""
         <div class="footer-note">
-            This extraction was auto-generated from scanned case file documents using Keppler AI (OCR + LLM).
-            Verify all clinical data against original records before use.
+            Generated on {time.strftime('%d %B %Y at %I:%M %p')} by Keppler AI. Verify all data against original records before use.
         </div>
         """
+        
+        # Ensure python-markdown sees tables properly by adding a blank line before the header
+        safe = re.sub(r'([^\|\n][ \t]*)\n([ \t]*\|)', r'\1\n\n\2', safe)
+        
+        # Let the standard python markdown parser handle the tables
+        html_body = markdown.markdown(safe, extensions=['tables', 'nl2br'])
+
+        # Substitute the pre-rendered meta-row/section-heading blocks back in,
+        # then unwrap the <p>...</p> markdown wrapped around them (and drop
+        # the <br> it joins adjacent placeholder lines with) — table/heading
+        # markup nested inside a <p> is invalid HTML that xhtml2pdf renders
+        # with stray extra spacing.
+        for key, block_html in meta_placeholders.items():
+            html_body = html_body.replace(key, block_html)
+        block_alt = r'(?:<table class="meta-table">.*?</table>|<h4 class="section-heading">.*?</h4>)'
+        html_body = re.sub(
+            rf'<p>\s*({block_alt}(?:\s*<br\s*/?>\s*{block_alt})*)\s*</p>',
+            lambda m: re.sub(r'<br\s*/?>', '', m.group(1)),
+            html_body, flags=re.S,
+        )
+
+        # Inject inline widths because xhtml2pdf ignores CSS nth-child
+        if "LDSL" in client_name:
+            html_body = re.sub(r'<th>\s*S\.?No\.?\s*</th>', '<th style="width: 8%">S.No</th>', html_body, flags=re.I)
+            html_body = re.sub(r'<th>\s*Test Description\s*</th>', '<th style="width: 45%">Test Description</th>', html_body, flags=re.I)
+            html_body = re.sub(r'<th>\s*Sample Type.*?</th>', '<th style="width: 30%">Sample Type (Please Tick)</th>', html_body, flags=re.I)
+            html_body = re.sub(r'<th>\s*Lab Name.*?</th>', '<th style="width: 17%">Lab Name / C.C. Code</th>', html_body, flags=re.I)
+        elif "Healmax" in client_name:
+            html_body = re.sub(r'<th>\s*S\.?No\.?\s*</th>', '<th style="width: 5%">S.No</th>', html_body, flags=re.I)
+            html_body = re.sub(r'<th>\s*Patient Name\s*</th>', '<th style="width: 14%">Patient Name</th>', html_body, flags=re.I)
+            html_body = re.sub(r'<th>\s*Age\s*/\s*Sex\s*</th>', '<th style="width: 8%">Age/Sex</th>', html_body, flags=re.I)
+            html_body = re.sub(r'<th>\s*Test Code\s*/\s*Name\s*</th>', '<th style="width: 20%">Test Code/Name</th>', html_body, flags=re.I)
+            html_body = re.sub(r'<th>\s*Sample Type\s*</th>', '<th style="width: 10%">Sample Type</th>', html_body, flags=re.I)
+            html_body = re.sub(r'<th>\s*Barcode No\s*</th>', '<th style="width: 10%">Barcode No</th>', html_body, flags=re.I)
+            html_body = re.sub(r'<th>\s*Date\s*/\s*Time\s*</th>', '<th style="width: 12%">Date/Time</th>', html_body, flags=re.I)
+            html_body = re.sub(r'<th>\s*Customer\s*</th>', '<th style="width: 12%">Customer</th>', html_body, flags=re.I)
+            html_body = re.sub(r'<th>\s*Referral Doctor\s*</th>', '<th style="width: 9%">Referral Doctor</th>', html_body, flags=re.I)
         
         html = f"<html><head><meta charset='utf-8'/><style>{pdf_css}</style></head><body>{cover}{html_body}{footer}</body></html>"
         out = io.BytesIO()
@@ -492,25 +763,16 @@ def generate_docx(md_text: str, client_name: str) -> bytes | str:
             section.right_margin  = Inches(1.0)
             
         # Cover heading
-        title = doc.add_heading("GREAT EASTERN MEDICAL SCHOOL & HOSPITAL", 0)
-        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        title.runs[0].font.color.rgb = RGBColor(0x1a, 0x52, 0x76)
-        
-        sub = doc.add_paragraph("OCR EXTRACTION REPORT")
-        sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        sub.runs[0].bold = True
-        sub.runs[0].font.size = Pt(13)
-        
-        info = doc.add_paragraph(f"{client_name}")
-        info.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        info.runs[0].font.size = Pt(10)
+        title = doc.add_heading(f"Extraction Report: {client_name}", 0)
+        title.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        title.runs[0].font.color.rgb = RGBColor(0x33, 0x33, 0x33)
         
         date_p = doc.add_paragraph(
-            f"Generated: {time.strftime('%d %B %Y at %I:%M %p')} | Confidential"
+            f"Generated: {time.strftime('%d %B %Y at %I:%M %p')}"
         )
-        date_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        date_p.runs[0].font.size = Pt(8)
-        date_p.runs[0].font.color.rgb = RGBColor(0x88, 0x88, 0x88)
+        date_p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        date_p.runs[0].font.size = Pt(9)
+        date_p.runs[0].font.color.rgb = RGBColor(0x66, 0x66, 0x66)
         doc.add_paragraph()
         
         clean = re.sub(r'<\|.*?\|>', '', md_text)
@@ -541,10 +803,10 @@ def generate_docx(md_text: str, client_name: str) -> bytes | str:
                     run = p.add_run(part)
                     if i % 2 == 1: run.bold = True
             elif line.startswith('|'):
-                if '---' in line:
+                if _is_table_separator(line):
                     continue
                 cells = [c.strip() for c in line.strip('|').split('|')]
-                cells = [c for c in cells if c]
+                cells = [c for c in cells if c or len(cells) > 1] # allow empty cells if part of row
                 if not cells:
                     continue
                 if not in_table:
@@ -556,7 +818,6 @@ def generate_docx(md_text: str, client_name: str) -> bytes | str:
                         cell.text = c
                         run = cell.paragraphs[0].runs[0] if cell.paragraphs[0].runs else cell.paragraphs[0].add_run(c)
                         run.bold = True
-                        run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
                         cell._tc.get_or_add_tcPr()
                     in_table = True
                 else:
@@ -610,9 +871,12 @@ def generate_excel(md_text: str) -> bytes | None:
                 raw_line = line.strip()
                 if not raw_line: continue
                 
-                # Table detection
-                if raw_line.count('|') >= 2:
-                    if all(c in '|- ' for c in raw_line) and '-' in raw_line:
+                # Table detection — require real Markdown table syntax (leading '|'),
+                # not just 2+ pipes. The LDSL/Healmax blueprints also use '|' as an
+                # informal separator in plain text lines (e.g. "**Age:** 34 | **Sex:** F"),
+                # which a "count('|') >= 2" check would misclassify as a table row.
+                if raw_line.startswith('|'):
+                    if _is_table_separator(raw_line):
                         continue
                     cells = [c.strip() for c in raw_line.split('|') if c.strip()]
                     if cells:
@@ -623,13 +887,19 @@ def generate_excel(md_text: str) -> bytes | None:
                         if len(current_table) > 1:
                             tables.append(current_table)
                         current_table = []
-                
-                # Metadata detection (Bold keys)
+
+                # Metadata detection (Bold keys) — split on '|' first so a single line
+                # packing several "**Key:** Value" fields (as LDSL/Healmax headers do)
+                # becomes one metadata row per field instead of one merged blob.
                 if '**' in raw_line and ':' in raw_line:
-                    # Clean up markers like **Patient Name:**
-                    parts = re.split(r'\*\*|\*', raw_line)
-                    cleaned = " ".join([p.strip() for p in parts if p.strip()])
-                    metadata.append([cleaned])
+                    for segment in raw_line.split('|'):
+                        segment = segment.strip()
+                        if not segment:
+                            continue
+                        parts = re.split(r'\*\*|\*', segment)
+                        cleaned = " ".join([p.strip() for p in parts if p.strip()])
+                        if cleaned:
+                            metadata.append([cleaned])
                 else:
                     other_text.append([raw_line])
             
@@ -698,8 +968,8 @@ def generate_json(md_text: str) -> str:
         raw = line.strip()
         if not raw: continue
         
-        if raw.count('|') >= 2:
-            if all(c in '|- ' for c in raw) and '-' in raw: continue
+        if raw.startswith('|'):
+            if _is_table_separator(raw): continue
             cells = [c.strip() for c in raw.split('|') if c.strip()]
             if cells: current_table.append(cells)
             continue
@@ -715,15 +985,20 @@ def generate_json(md_text: str) -> str:
                     table_data.append(row_dict)
                 data["tables"].append(table_data)
                 current_table = []
-        
+
         if '**' in raw and ':' in raw:
-            parts = raw.split('**')
-            if len(parts) >= 3:
-                key = parts[1].replace(':', '').strip()
-                val = "".join(parts[2:]).strip()
-                if key: data["metadata"][key] = val
-            else:
-                data["text"].append(raw)
+            for segment in raw.split('|'):
+                segment = segment.strip()
+                if not segment:
+                    continue
+                parts = segment.split('**')
+                if len(parts) >= 3:
+                    key = parts[1].replace(':', '').strip()
+                    val = "".join(parts[2:]).strip()
+                    if key:
+                        data["metadata"][key] = val
+                elif segment:
+                    data["text"].append(segment)
         else:
             data["text"].append(raw)
             
@@ -745,25 +1020,30 @@ def generate_json(md_text: str) -> str:
 # ---------------------------------------------------------------------------
 BLUEPRINTS = {
     "Universal OCR (Any Text)": {
-        "identity": "You are an advanced Universal OCR engine capable of extracting text from ANY image. Your job is to perform complete, highly accurate, and exhaustive transcription of the entire document from top to bottom.",
+        "identity": "You are a state-of-the-art Universal OCR Vision Model, operating at the same capability level as Google Vision and OpenAI GPT-4V. You possess vast world knowledge across all domains (medical, legal, financial, etc.).",
         "structure": "Organize the extracted text into a clean, professional Markdown format. Use Markdown Headers (###) for sections, **bold text** for keys/labels, bullet points (-) for lists, and Markdown Tables (|---|) for any tabular or grid-like data.",
-        "instructions": "MANDATORY: Extract EVERY single line of text from the image without exception. Do not truncate, omit, or summarize the content. Scan the entire image carefully and transcribe all items, values, and notes from top to bottom.",
-        "rules": "2. EXHAUSTIVE TRANSCRIPTION: Do not stop generating until the very last word of the image is transcribed.\n3. FORMATTING: Use Markdown (bolding, lists, tables) to give the text a professional structure.\n4. KEY-VALUE PAIRS: If you see a label and a value (e.g., Name: John), format it as **Name:** John.\n5. NO PREAMBLE: Start directly with the extracted data. No greetings or meta-commentary.\n6. MISSING DATA: If any field is missing from the document, leave it completely blank. Do NOT write 'Not documented', 'N/A', or 'None'."
+        "instructions": "MANDATORY: Extract ANY kind of text, across different font styles, variations, and especially messy cursive handwriting with 100% zero-shot accuracy. If the document is handwritten (e.g. a medical prescription), actively use medical domain knowledge to decipher it. Look for standard abbreviations like 'Tab', 'Cap', 'Syr'. Do not output your internal reasoning.",
+        "rules": "2. EXHAUSTIVE TRANSCRIPTION: Do not stop generating until the very last word of the image is transcribed.\n3. CONTEXTUAL REASONING: Never blindly transcribe letters that form nonsensical phrases (like 'Tarsal Lateral') if a highly probable domain-specific term (like 'Tab Letoval') fits the visual strokes better. Cross-reference letter shapes against known pharmaceutical brand names.\n4. NO PREAMBLE: Start directly with the extracted data. Do not output the document domain or any greetings.\n5. FORMATTING: Use Markdown to give the text a professional structure."
     },
     "LDSL Diagnostics": {
-        "identity": "You are a high-performance medical OCR engine (Qwen 2.5 VL optimized).",
+        "identity": "You are a high-performance medical OCR engine (Qwen 2.5 VL optimized), specialized in reading LDSL Diagnostics test requisition forms.",
         "structure": """\
-**Patient Name:** [Full Name] | **Age/Sex:** [Age]/[Sex]
-**Referred Doctor:** [Doctor Name] | **Coll. Time & Date:** [Date and Time]
+**Patient Name:** [Full Name as written, preserve letter spacing if boxed] | **Age:** [Age] | **Sex:** [M/F]
+**Referred Doctor:** [Doctor Name] | **Collection Date:** [DD-MM-YYYY] | **Collection Time:** [HH:MM AM/PM]
 
-| S.No | Test Description | Sample Type | Result (if any) |
-|------|-----------------|-------------|-----------------|
-| 1    | [Test Name]     | [Sample]    | [Value/Result]  |
+| S.No | Test Description | Sample Type (Please Tick) | Lab Name / C.C. Code |
+|------|-------------------|----------------------------|------------------------|
+| 1    | [Test Name]       | [Ticked/circled sample type, exactly as marked] | [Code if printed, else blank] |
 
-**History:** DOB: [DOB] | Weight: [Weight] | Diabetes: [Yes/No] | Ultrasound: [Details]
-**Footer:** Checked By: [Name] | Area: [Location]""",
-        "instructions": "MANDATORY: Transcribe every handwritten entry exactly. Use the Markdown table for all test results. Do not omit the Patient Name or History section.",
-        "rules": "2. SPATIAL AWARENESS: Maintain the exact layout and hierarchy seen in the document.\n3. HANDWRITING: Transcribe every handwritten scribble or mark. If a checkmark is present in a box, represent it as [x].\n4. NUMERICAL PRECISION: Do not round or alter any numbers, dates, or measurements.\n5. NO PREAMBLE: Start directly with the extracted data. No greetings or meta-commentary.\n6. TABLE INTEGRITY: Ensure every column of the table is populated correctly based on the visual rows.\n7. MISSING DATA: If any field is missing from the document, leave it completely blank. Do NOT write 'Not documented', 'N/A', or 'None'."
+**History for Quadruple/Triple/Double Marker Tests:**
+Date of Birth: [DOB] | Weight: [Weight]
+LMP: [LMP] | Gestation Age: [Gestation Age]
+Diabetes Status: [Yes/No/N/A] | Gestation: [Single/Twin]
+Ultrasound Findings: [Details]
+
+**Footer:** Collection Executive: [Name] | Date: [DD-MM-YYYY] | Checked by: [Name]""",
+        "instructions": "MANDATORY: Transcribe every handwritten entry exactly. Use the 4-column Markdown table for all 10 test rows — do NOT merge the 'Sample Type' and 'Lab Name / C.C. Code' columns, they are always separate even if visually close together. Do not omit the Patient Name, History, or Footer sections.",
+        "rules": "2. SPATIAL AWARENESS: Maintain the exact layout and hierarchy seen in the document — S.No, Test Description, Sample Type, and Lab Name/C.C. Code are four distinct columns, never combine them into one cell.\n3. HANDWRITING & TICKS: Transcribe every handwritten scribble or mark. If a sample type box is ticked/circled, write only that ticked option; if none is marked, leave the cell blank rather than guessing.\n4. NUMERICAL PRECISION: Do not round or alter any numbers, dates, or measurements. If a date or time is partially cut off or ambiguous, transcribe exactly what is visible rather than inferring the missing part.\n5. NO PREAMBLE: Start directly with the extracted data. No greetings or meta-commentary.\n6. TABLE INTEGRITY: Ensure all 10 test rows are present and every column is populated based on the visual rows, in reading order top to bottom.\n7. MISSING DATA: If any field is missing from the document, leave it completely blank. Do NOT write 'Not documented', 'N/A', or 'None' unless that literal text is printed on the form."
     },
     "Healmax Diagnostics": {
         "identity": "You are a high-performance medical OCR engine (Qwen 2.5 VL optimized).",
@@ -774,6 +1054,12 @@ BLUEPRINTS = {
 |------|-------------|---------|----------------|-------------|------------|-----------|----------|-----------------|""",
         "instructions": "Fill all 9 table columns. Do NOT merge or skip any column.",
         "rules": "2. SPATIAL AWARENESS: Maintain the exact layout and hierarchy seen in the document.\n3. HANDWRITING: Transcribe every handwritten scribble or mark. If a checkmark is present in a box, represent it as [x].\n4. NUMERICAL PRECISION: Do not round or alter any numbers, dates, or measurements.\n5. NO PREAMBLE: Start directly with the extracted data. No greetings or meta-commentary.\n6. TABLE INTEGRITY: Ensure every column of the table is populated correctly based on the visual rows.\n7. MISSING DATA: If any field is missing from the document, leave it completely blank. Do NOT write 'Not documented', 'N/A', or 'None'."
+    },
+    "Handwritten Medical Prescription": {
+        "identity": "You are an expert Clinical Pharmacist AI. You specialize in deciphering highly illegible, cursive doctor handwriting.",
+        "structure": "Organize the extracted text into a clean Markdown format. Use bullet points for medications, including dosages and frequencies if present.",
+        "instructions": "MANDATORY: Actively use medical domain knowledge to decipher the handwriting. Look for standard abbreviations like 'Tab' (Tablet), 'Cap' (Capsule), 'Syr' (Syrup), 'Inj' (Injection). Cross-reference letter shapes against known pharmaceutical brand names and generic drugs.",
+        "rules": "2. CONTEXTUAL REASONING: Cursive shapes that look like 'Tarsal Lateral' or 'Tarsal Evaduel' in a medication list are almost certainly misreadings of 'Tab Letoval' or 'Tab Evadiol'. Use your semantic medical knowledge to read the true intent of the scribble.\n3. NO PREAMBLE: Start directly with the extracted data.\n4. FIDELITY: Do not hallucinate generic names if a brand name is written."
     }
 }
 
@@ -824,119 +1110,109 @@ def process_single_page(raw_img: Image.Image, label: str, idx: int, total_pages:
     page_info = f"{label} of {total_pages}" if total_pages > 1 else ""
     prompt = build_prompt(client, page_info)
 
-    # Layout Detection Layer
     if progress_cb: progress_cb(0.15)
-    detector = DocLayoutDetector()
-    regions = detector.detect_regions(raw_img)
-
-    # Reading Order Reconstruction
-    if progress_cb: progress_cb(0.30)
-    ro_engine = ReadingOrderEngine()
-    w, h = raw_img.size
-    ordered_mapping = ro_engine.reconstruct(regions, page_width=w, page_height=h)
-
-    order_dict = {item['region_id']: item['reading_order'] for item in ordered_mapping}
-    regions.sort(key=lambda r: order_dict.get(r['region_id'], 9999))
-
-    non_table_regions = []
-    table_regions = []
-    for r in regions:
-        if r['region_type'] == 'Table':
-            table_regions.append(r)
-        else:
-            non_table_regions.append(r)
-
-    # Async region OCR for standard content
-    if progress_cb: progress_cb(0.45)
+    
+    # We use AsyncRegionOCR's robust retry logic directly on the full page image,
+    # completely bypassing the destructive YOLO layout shredder.
     async_ocr = AsyncRegionOCR(max_concurrent=5, model_name="qwen2.5-vl-7b")
-    table_extractor = TableExtractor()
+    
+    w, h = raw_img.size
+    
+    # Qwen2.5-VL handles full-page table extraction natively in one shot. 
+    # Bypassing the YOLO shredder completely eliminates queueing delays and drops processing time to ~5 seconds.
+    if False:
+        # --- PATH A: Shredded Layout Mode (Strict Tables) ---
+        if progress_cb: progress_cb(0.15)
+        detector = DocLayoutDetector()
+        regions = detector.detect_regions(raw_img)
 
-    structured_results = asyncio.run(async_ocr.process_page_regions(
-        regions=non_table_regions,
-        raw_img=raw_img,
-        page_num=idx + 1,
-        prompt=prompt
-    ))
-
-    # Table Extraction (TATR)
-    if progress_cb: progress_cb(0.65)
-    for t_reg in table_regions:
-        pad = 10
-        box = t_reg['bbox']
+        if progress_cb: progress_cb(0.30)
+        ro_engine = ReadingOrderEngine()
         w, h = raw_img.size
-        crop_box = (max(0, box[0] - pad), max(0, box[1] - pad), min(w, box[2] + pad), min(h, box[3] + pad))
-        table_img = raw_img.crop(crop_box)
+        ordered_mapping = ro_engine.reconstruct(regions, page_width=w, page_height=h)
 
-        df = asyncio.run(table_extractor.extract(table_img, async_ocr, page_num=idx + 1))
-        if not df.empty:
-            md_table = df.to_markdown(index=False)
-            structured_results.append({
-                "page": idx + 1,
-                "region_id": t_reg["region_id"],
-                "region_type": "Table",
-                "text": md_table,
-                "bbox": box,
-                "predictions": []
-            })
+        order_dict = {item['region_id']: item['reading_order'] for item in ordered_mapping}
+        regions.sort(key=lambda r: order_dict.get(r['region_id'], 9999))
 
-    # Re-sort results to preserve semantic reading order
-    structured_results.sort(key=lambda r: order_dict.get(r['region_id'], 9999))
+        non_table_regions = []
+        table_regions = []
+        for r in regions:
+            if r['region_type'] == 'Table':
+                table_regions.append(r)
+            else:
+                non_table_regions.append(r)
 
-    page_extracted_parts = []
-    success_count = 0
+        if progress_cb: progress_cb(0.45)
+        table_extractor = TableExtractor()
+
+        structured_results = asyncio.run(async_ocr.process_page_regions(
+            regions=non_table_regions,
+            raw_img=raw_img,
+            page_num=idx + 1,
+            prompt=prompt
+        ))
+
+        if progress_cb: progress_cb(0.65)
+        for t_reg in table_regions:
+            pad = 10
+            box = t_reg['bbox']
+            crop_box = (max(0, box[0] - pad), max(0, box[1] - pad), min(w, box[2] + pad), min(h, box[3] + pad))
+            table_img = raw_img.crop(crop_box)
+
+            df = asyncio.run(table_extractor.extract(table_img, async_ocr, page_num=idx + 1))
+            if not df.empty:
+                md_table = df.to_markdown(index=False)
+                structured_results.append({
+                    "page": idx + 1,
+                    "region_id": t_reg["region_id"],
+                    "region_type": "Table",
+                    "text": md_table,
+                    "bbox": box,
+                    "predictions": []
+                })
+                
+        # Sort back to reading order
+        structured_results.sort(key=lambda r: order_dict.get(r.get('region_id', ''), 9999))
+        
+        extracted_text = "\n\n".join([r['text'] for r in structured_results if r['text']])
+        predictions = []
+        for r in structured_results:
+            predictions.extend(r.get('predictions', []))
+            
+    else:
+        # --- PATH B: Single-Shot Mode (Handwriting Context) ---
+        if progress_cb: progress_cb(0.40)
+        
+        extracted_text, strategy_used, predictions, ocr_confidence = asyncio.run(
+            async_ocr._call_model_with_retry_async(raw_img, prompt)
+        )
+        
+        if progress_cb: progress_cb(0.80)
+    
+    if progress_cb: progress_cb(0.85)
+    
     page_preds = []
-
-    for res in structured_results:
-        if res["text"]:
-            success_count += 1
-            clean_txt = res["text"].replace('*', '').replace('#', '')
-            page_extracted_parts.append(clean_txt)
-            layout_conf = res.get("layout_confidence", 1.0)
-            for pred in res.get("predictions", []):
-                sem_conf = float(pred.get("Confidence", 0.0))
-                final_conf = ConfidenceEngine.calculate_final_confidence(layout_conf, sem_conf)
-                pred["Confidence"] = f"{final_conf:.2f}"
-                pred["page"] = idx + 1
-                pred["bbox"] = res.get("bbox", [])
-                # Grounding (Phase 5): trace which OCR engine actually produced
-                # this region's text and how confident that read was, separate
-                # from the entity-resolution confidence above.
-                pred["ocr_confidence"] = res.get("ocr_confidence", 0.0)
-                pred["ocr_model_used"] = res.get("ocr_model_used", "unknown")
-                pred["region_id"] = res.get("region_id", "")
-                pred["region_type"] = res.get("region_type", "Unknown")
-                page_preds.append(pred)
-
-    if success_count > 0:
-        final_page_text = "\n\n".join(page_extracted_parts)
-
-        # Medical Correction Layer
-        if progress_cb: progress_cb(0.85)
-        med_corrector = MedicalCorrector()
-        correction_result = asyncio.run(med_corrector.correct_text(final_page_text))
-
-        corrected_page_text = correction_result["corrected_text"]
-
-        for c in correction_result.get("corrections", []):
-            sem_conf = float(c.get('confidence', 0.0))
+    if extracted_text:
+        # Ground the predictions to the full page since layout detector was bypassed.
+        full_page_bbox = [0, 0, w, h]
+        for pred in predictions:
+            # layout_confidence is always 1.0 for the full page
+            sem_conf = float(pred.get("Confidence", 0.0))
             final_conf = ConfidenceEngine.calculate_final_confidence(1.0, sem_conf)
-            page_preds.append({
-                "Original Text": c["original"],
-                "Predicted Code": "CORRECTION",
-                "Predicted Name": c["corrected"],
-                "Type": "Medical Typo",
-                "Confidence": f"{final_conf:.2f}",
-                "page": idx + 1,
-                "bbox": [],
-                "ocr_confidence": sem_conf,
-                "ocr_model_used": "medical_corrector",
-                "region_id": "",
-                "region_type": "Correction",
-            })
-
-        page_text = corrected_page_text
+            pred["Confidence"] = f"{final_conf:.2f}"
+            pred["page"] = idx + 1
+            pred["bbox"] = full_page_bbox
+            pred["ocr_confidence"] = ocr_confidence
+            pred["ocr_model_used"] = "qwen2.5-vl-7b"
+            pred["region_id"] = "full-page"
+            pred["region_type"] = "Full Page"
+            page_preds.append(pred)
+            
+        page_text = extracted_text
     else:
         page_text = f"*[{label}: Extraction failed — content too short or empty]*"
+
+    if progress_cb: progress_cb(0.95)
 
     return {"label": label, "text": page_text, "predictions": page_preds}
 

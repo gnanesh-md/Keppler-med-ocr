@@ -82,6 +82,9 @@ qdrant-client==1.12.1              # Vector DB client (modules/rag_engine.py). P
                                     # docker-compose qdrant/qdrant:v1.12.4 server's major.minor —
                                     # client/server version drift here just prints a warning today,
                                     # but the project recommends keeping them aligned.
+fastembed>=0.8.0                   # CPU-only (onnxruntime) BM25 sparse embeddings for hybrid
+                                    # dense+sparse retrieval (Phase 9, modules/rag_engine.py) — no
+                                    # GPU cost, keeps the shared GPU free for vLLM/BGE-M3/reranker.
 
 # ── Security (Phase 6) ────────────────────────────────────────────────────────
 slowapi>=0.1.9                     # Rate limiting (core/rate_limit.py)

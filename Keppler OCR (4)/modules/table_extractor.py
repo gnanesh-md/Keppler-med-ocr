@@ -52,89 +52,29 @@ class TableExtractor:
             logger.warning("TATR model not loaded, skipping structural extraction.")
             return pd.DataFrame()
 
-        import torchvision.transforms as T
-
-        # TATR expects images resized and normalized
-        transform = T.Compose([
-            T.Resize(800),
-            T.ToTensor(),
-            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
-
-        pixel_values = transform(image).unsqueeze(0)
-
-        with torch.no_grad():
-            outputs = self.model(pixel_values)
-
         w, h = image.size
-        pred_logits = outputs.logits.squeeze(0)
-        pred_boxes = outputs.pred_boxes.squeeze(0)
-
-        # Filter predictions by confidence threshold
-        probs = pred_logits.softmax(-1)[:, :-1]
-        scores, labels = probs.max(-1)
-        
-        keep = scores > 0.5
-        boxes = pred_boxes[keep]
-        labels = labels[keep]
-
-        # Convert relative cxcywh back to absolute xyxy
-        center_x, center_y, width, height = boxes.unbind(-1)
-        x1 = (center_x - 0.5 * width) * w
-        y1 = (center_y - 0.5 * height) * h
-        x2 = (center_x + 0.5 * width) * w
-        y2 = (center_y + 0.5 * height) * h
-        xyxy_boxes = torch.stack([x1, y1, x2, y2], dim=-1)
-
-        # Extract "table row" boxes (Class ID 2 in TATR structure model)
-        row_class_id = 2
-        row_mask = (labels == row_class_id)
-        row_boxes = xyxy_boxes[row_mask].tolist()
-        row_scores = scores[row_mask].tolist()
-
-        # Bundle with scores
-        row_data = list(zip(row_boxes, row_scores))
-        # Sort rows top-to-bottom
-        row_data.sort(key=lambda x: x[0][1])
-
-        # Fallback if no rows detected
-        if not row_data:
-            row_data = [([0, 0, w, h], 1.0)]
-
-        # Prepare regions for AsyncRegionOCR
-        row_regions = []
-        for i, (r_box, r_conf) in enumerate(row_data):
-            row_regions.append({
-                "region_id": f"row_{i}",
-                "region_type": "TableRow",
-                "bbox": r_box,
-                "confidence": r_conf
-            })
-
-        # Table-specific strict prompt
         prompt = (
-            "Extract the data in this table row as a single pipe-delimited (|) string. "
-            "Do not include markdown tables, explanations, or code fences. "
-            "Ensure empty columns are represented by empty spaces between pipes. "
-            "Output exactly one line of text."
+            "Extract the data in this table and format it as a clean Markdown table. "
+            "Include all rows and columns exactly as they appear. Do not skip any rows. "
+            "If the table spans multiple lines, preserve the structure in markdown format."
         )
-
-        # Execute extraction concurrently across all rows using existing engine
         results = await async_ocr_engine.process_page_regions(
-            regions=row_regions,
+            regions=[{"region_id": "table_full", "region_type": "Table", "bbox": [0, 0, w, h], "confidence": 1.0}],
             raw_img=image,
             page_num=page_num,
             prompt=prompt
         )
-
-        # Build DataFrame
+        
         table_data = []
-        for res in results:
-            text = res["text"].strip()
-            # Split by pipe and clean up whitespace
-            cols = [col.strip() for col in text.split('|')]
-            if any(cols): # Skip completely empty rows
-                table_data.append(cols)
+        if results:
+            text = results[0]["text"]
+            lines = [line.strip() for line in text.split('\n') if '|' in line]
+            for line in lines:
+                if '---' in line:
+                    continue
+                cols = [col.strip() for col in line.strip('|').split('|')]
+                if any(cols):
+                    table_data.append(cols)
 
         if not table_data:
             return pd.DataFrame()
@@ -145,6 +85,10 @@ class TableExtractor:
             while len(row) < max_cols:
                 row.append("")
 
-        # Assume first row is header
-        df = pd.DataFrame(table_data[1:], columns=table_data[0])
+        # Assume first row is header if we have more than 1 row
+        if len(table_data) > 1:
+            df = pd.DataFrame(table_data[1:], columns=table_data[0])
+        else:
+            df = pd.DataFrame(table_data)
+            
         return df

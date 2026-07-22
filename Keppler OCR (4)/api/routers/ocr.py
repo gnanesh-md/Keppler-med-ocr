@@ -97,6 +97,7 @@ async def job_status(job_id: str, current_user: CurrentUser = Depends(get_curren
             "status": job.status,
             "progress": job.progress,
             "error_message": job.error_message,
+            "result_doc_id": job.result_doc_id,
         }
     finally:
         db.close()
@@ -136,7 +137,14 @@ async def job_original(job_id: str, current_user: CurrentUser = Depends(get_curr
     try:
         job = _get_owned_job(db, job_id, current_user.user_id)
         doc = db.query(Document).filter(Document.id == job.document_id).first()
-        if not doc or not doc.upload_path or not os.path.exists(doc.upload_path):
+        if not doc or not doc.upload_path:
+            raise HTTPException(status_code=404, detail="Original document not found.")
+        
+        resolved_path = doc.upload_path
+        if not os.path.exists(resolved_path):
+            resolved_path = os.path.join(settings.UPLOAD_DIR, os.path.basename(resolved_path))
+            
+        if not os.path.exists(resolved_path):
             raise HTTPException(status_code=404, detail="Original document not found.")
 
         ext = os.path.splitext(doc.filename)[1].lower()
